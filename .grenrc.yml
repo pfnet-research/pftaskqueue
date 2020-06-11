@@ -1,0 +1,9 @@
+---
+dataSource: "issues"
+prefix: ""
+onlyMilestones: false
+ignoreIssuesWith: ["wontfix", "duplicate"]
+groupBy:
+  "Enhancements": ["enhancement"]
+  "Bug Fixes": ["bug"]
+changelogFilename: "CHANGELOG.md"
