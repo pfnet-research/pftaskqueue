@@ -17,10 +17,10 @@ setup:
 	npm install --prefix=.dev markdown-toc && \
 	npm install --prefix=.dev github-release-notes && \
 	cd $(shell go env GOPATH) && \
-	GO111MODULE=off go get -u golang.org/x/tools/cmd/goimports && \
-	GO111MODULE=off go get -u github.com/golangci/golangci-lint/cmd/golangci-lint && \
-	GO111MODULE=off go get -u github.com/elastic/go-licenser && \
-	GO111MODULE=off go get -u github.com/tcnksm/ghr
+	go get -u golang.org/x/tools/cmd/goimports && \
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.27.0 && \
+	go get -u github.com/elastic/go-licenser && \
+	go get -u github.com/tcnksm/ghr
 
 .PHONY: fmt
 fmt:
