@@ -90,7 +90,7 @@ var _ = Describe("Worker", func() {
 				TaskHandler: apiworker.TaskHandlerSpec{
 					DefaultCommandTimeout: 1 * time.Minute,
 					Commands: []string{
-						"sh",
+						"bash",
 						"-c",
 						heredoc.Doc(`
 							DIR=$(cat)
