@@ -1,5 +1,6 @@
 FROM golang:1.13.5 as builder
 ARG RELEASE
+ARG VERSION
 WORKDIR /workspace
 COPY go.mod go.mod
 COPY go.sum go.sum

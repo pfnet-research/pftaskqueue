@@ -4,7 +4,7 @@ export CGO_ENABLED=0
 
 # project metadta
 NAME         := pftaskqueue
-VERSION      ?= $(shell cat ./VERSION)
+VERSION      ?= $(if $(RELEASE),$(shell git semv),$(shell git semv patch))
 REVISION     := $(shell git rev-parse --short HEAD)
 IMAGE_PREFIX ?= pftaskqueue/
 IMAGE_NAME   := $(if $(RELEASE),release,dev)
@@ -22,7 +22,8 @@ setup:
 	go get -u golang.org/x/tools/cmd/goimports && \
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.27.0 && \
 	go get -u github.com/elastic/go-licenser && \
-	go get -u github.com/tcnksm/ghr
+	go get -u github.com/tcnksm/ghr && \
+	go get -u github.com/linyows/git-semv/cmd/git-semv
 
 .PHONY: fmt
 fmt:
@@ -55,7 +56,7 @@ clean:
 
 .PHONY: build-image
 build-image:
-	docker build -t $(shell make -e docker-tag) --build-arg RELEASE=$(RELEASE) --target runtime .
+	docker build -t $(shell make -e docker-tag) --build-arg RELEASE=$(RELEASE) --build-arg VERSION=$(VERSION) --target runtime .
 	docker tag $(shell make -e docker-tag) $(IMAGE_PREFIX)$(IMAGE_NAME):$(VERSION)  # without revision
 	docker tag $(shell make -e docker-tag) $(IMAGE_PREFIX)$(IMAGE_NAME):latest      # latest
 
