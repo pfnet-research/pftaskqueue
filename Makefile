@@ -55,13 +55,21 @@ clean:
 build-image:
 	docker build -t $(shell make -e docker-tag) --build-arg RELEASE=$(RELEASE) --target runtime .
 	docker tag $(shell make -e docker-tag) $(IMAGE_PREFIX)pftaskqueue:$(VERSION)
-	if [ "$(RELEASE)" != "" ]; then docker tag $(shell make -e docker-tag) $(IMAGE_PREFIX)pftaskqueue:latest; fi
+	if [ "$(RELEASE)" != "" ]; then \
+		docker tag $(shell make -e docker-tag) $(IMAGE_PREFIX)pftaskqueue:latest; \
+	else \
+		docker tag $(shell make -e docker-tag) $(IMAGE_PREFIX)pftaskqueue:dev; \
+	fi
 
 .PHONY: push-image
 push-image:
 	docker push $(shell make -e docker-tag)
 	docker push $(IMAGE_PREFIX)pftaskqueue:$(VERSION)
-	if [ "$(RELEASE)" != "" ]; then docker push $(IMAGE_PREFIX)pftaskqueue:latest; fi
+	if [ "$(RELEASE)" != "" ]; then \
+	  docker push $(IMAGE_PREFIX)pftaskqueue:latest; \
+	else \
+	  docker push $(IMAGE_PREFIX)pftaskqueue:dev; \
+	fi
 
 .PHONY: docker-tag
 docker-tag:
