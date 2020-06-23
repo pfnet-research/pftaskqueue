@@ -38,7 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DOCKER_BUILDKIT: 1
-      IMAGE_PREFIX: docker.pkg.github.com/pfnet-research/pftaskqueue/
+      IMAGE_PREFIX: docker.pkg.github.com/${{ github.repository }}/
     steps:
       - name: Check out
         uses: actions/checkout@v2
