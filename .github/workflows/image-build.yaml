@@ -1,0 +1,22 @@
+name: Image Build And Push
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+
+  image_build_and_push:
+    name: Image Build And Push
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_BUILDKIT: 1
+    steps:
+      - name: Check out
+        uses: actions/checkout@v2
+      - name: Login GitHub Registry
+        run: docker login docker.pkg.github.com -u owner -p ${{ secrets.GITHUB_TOKEN }}
+      - name: Build Docker image
+        run: make build-image IMAGE_PREFIX=docker.pkg.github.com/pfnet-research/
+      - name: Push Docker image
+        run: make push-image IMAGE_PREFIX=docker.pkg.github.com/pfnet-research/
