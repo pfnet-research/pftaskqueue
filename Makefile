@@ -4,9 +4,9 @@ export CGO_ENABLED=0
 
 # project metadta
 NAME         := pftaskqueue
-VERSION      := $(if $(RELEASE),$(shell cat ./VERSION),$(shell cat ./VERSION)-dev)
+VERSION      ?= $(if $(RELEASE),$(shell cat ./VERSION),$(shell cat ./VERSION)-dev)
 REVISION     := $(shell git rev-parse --short HEAD)
-IMAGE_TAG    ?= $(VERSION)
+IMAGE_TAG    ?= $(if $(RELEASE),$(VERSION),$(VERSION)-$(REVISION))
 LDFLAGS      := -ldflags="-s -w -X \"github.com/pfnet-research/pftaskqueue/cmd.Version=$(VERSION)\" -X \"github.com/pfnet-research/pftaskqueue/cmd.Revision=$(REVISION)\" -extldflags \"-static\""
 OUTDIR       ?= ./dist
 
@@ -53,7 +53,15 @@ clean:
 
 .PHONY: build-image
 build-image:
-	docker build -t $(IMAGE_PREFIX)pftaskqueue:$(IMAGE_TAG) --build-arg RELEASE=$(RELEASE) --target runtime .
+	docker build -t $(shell make -e docker-tag) --build-arg RELEASE=$(RELEASE) --target runtime .
+	docker tag $(shell make -e docker-tag) $(IMAGE_PREFIX)pftaskqueue:$(VERSION)
+	if [ "$(RELEASE)" != "" ]; then docker tag $(shell make -e docker-tag) $(IMAGE_PREFIX)pftaskqueue:latest; fi
+
+.PHONY: push-image
+push-image:
+	docker push $(shell make -e docker-tag)
+	docker push $(IMAGE_PREFIX)pftaskqueue:$(VERSION)
+	if [ "$(RELEASE)" != "" ]; then docker push $(IMAGE_PREFIX)pftaskqueue:latest; fi
 
 .PHONY: docker-tag
 docker-tag:
@@ -119,5 +127,5 @@ release-image: guard-RELEASE guard-RELEASE_TAG
 	git diff --quiet HEAD || (echo "your current branch is dirty" && exit 1)
 	git checkout $(RELEASE_TAG)
 	make build-image
-	docker push $(shell make docker-tag RELEASE=$(RELEASE))
+	docker push $(shell make -e docker-tag RELEASE=$(RELEASE))
 	git checkout -
