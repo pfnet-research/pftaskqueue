@@ -795,13 +795,11 @@ make test
 
 ### How to make release
 
-checkout revision which you wanted to release first, then
+`release` target tags a commit and push the tag to `origin`.  Release process will run in GitHub Action.
 
 ```bash
-# export GITHUB_TOKEN='....'
-# export GITHUB_API=http://github.com/api/v3/
-# export IMAGE_PREFIX=your.docker.registry/org/
-$ make release RELEASE=true RELEASE_TAG=$(cat VERSION)
+$ RELEASE_TAG=$(git semv patch) # next patch version.  bump major/minor version if necessary
+$ make release RELEASE=true RELEASE_TAG=${RELEASE_TAG}
 ```
 
 ## License
