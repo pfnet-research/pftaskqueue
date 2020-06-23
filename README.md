@@ -88,15 +88,24 @@
 
 ### Download released binary
 
-Just download a binary for your platform from [releases](./../../releases) page and make it executable.
+Just download a tar ball for your platform from [releases](./../../releases) page, decompress the archive and place a binary to your `PATH`.
 
 ### Docker image
 
+`pftaskqueue` publishes two kind of docker iamges in [GitHub Packages](https://github.com/pfnet-research/pftaskqueue/packages)
+
+- `docker.pkg.github.com/pfnet-research/pftaskqueue/dev:latest`: built on the latest master branch
+  - `docker.pkg.github.com/pfnet-research/pftaskqueue/dev:vx.y.z-alppha.n` is also available for old dev images
+- `docker.pkg.github.com/pfnet-research/pftaskqueue/release:latest`: the latest release image
+  -  `docker.pkg.github.com/pfnet-research/pftaskqueue/release:vx.y.z` is also available for previous/specific release images
+
+To pull those images, you would need `docker login docker.pkg.github.com` first.  Please see [Configuring Docker for use with GitHub Packages](https://help.github.com/en/packages/using-github-packages-with-your-projects-ecosystem/configuring-docker-for-use-with-github-packages) if you are not familiar wit it.
+
 ```bash
-T.B.D.
+$ docker pull docker.pkg.github.com/pfnet-research/pftaskqueue/release:latest
 ```
 
-For build docker image by yourself:
+To build docker image by yourself:
 
 ```bash
 docker build . -t YOUR_TAG
