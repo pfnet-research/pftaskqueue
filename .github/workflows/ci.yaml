@@ -34,6 +34,11 @@ jobs:
       run: make
     - name: Test
       run: make test
+    - name: Validate .goreleaser.yml
+      uses: goreleaser/goreleaser-action@v2
+      with:
+        version: latest
+        args: release --snapshot --skip-publish --rm-dist --debug
 
   image_build:
     name: Image Build
