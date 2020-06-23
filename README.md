@@ -1,5 +1,7 @@
 # pftaskqueue: Lightweight task queue tool. Feel free to process embarrassingly-parallel tasks at scale.
 
+[![CI](https://github.com/pfnet-research/pftaskqueue/workflows/CI/badge.svg)](https://github.com/pfnet-research/pftaskqueue/actions?query=workflow%3ACI)
+
 ```
               +-------------------------+
 +----+          +----+ +----+    +----+
