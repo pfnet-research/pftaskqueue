@@ -4,8 +4,10 @@ export CGO_ENABLED=0
 
 # project metadta
 NAME         := pftaskqueue
-VERSION      ?= $(if $(RELEASE),$(shell cat ./VERSION),$(shell cat ./VERSION)-dev)
+VERSION      ?= $(shell cat ./VERSION)
 REVISION     := $(shell git rev-parse --short HEAD)
+IMAGE_PREFIX ?= pftaskqueue/
+IMAGE_NAME   := $(if $(RELEASE),release,dev)
 IMAGE_TAG    ?= $(if $(RELEASE),$(VERSION),$(VERSION)-$(REVISION))
 LDFLAGS      := -ldflags="-s -w -X \"github.com/pfnet-research/pftaskqueue/cmd.Version=$(VERSION)\" -X \"github.com/pfnet-research/pftaskqueue/cmd.Revision=$(REVISION)\" -extldflags \"-static\""
 OUTDIR       ?= ./dist
@@ -54,26 +56,18 @@ clean:
 .PHONY: build-image
 build-image:
 	docker build -t $(shell make -e docker-tag) --build-arg RELEASE=$(RELEASE) --target runtime .
-	docker tag $(shell make -e docker-tag) $(IMAGE_PREFIX)pftaskqueue:$(VERSION)
-	if [ "$(RELEASE)" != "" ]; then \
-		docker tag $(shell make -e docker-tag) $(IMAGE_PREFIX)pftaskqueue:latest; \
-	else \
-		docker tag $(shell make -e docker-tag) $(IMAGE_PREFIX)pftaskqueue:dev; \
-	fi
+	docker tag $(shell make -e docker-tag) $(IMAGE_PREFIX)$(IMAGE_NAME):$(VERSION)  # without revision
+	docker tag $(shell make -e docker-tag) $(IMAGE_PREFIX)$(IMAGE_NAME):latest      # latest
 
 .PHONY: push-image
 push-image:
 	docker push $(shell make -e docker-tag)
-	docker push $(IMAGE_PREFIX)pftaskqueue:$(VERSION)
-	if [ "$(RELEASE)" != "" ]; then \
-	  docker push $(IMAGE_PREFIX)pftaskqueue:latest; \
-	else \
-	  docker push $(IMAGE_PREFIX)pftaskqueue:dev; \
-	fi
+	docker push $(IMAGE_PREFIX)$(IMAGE_NAME):$(VERSION) # without revision
+	docker push $(IMAGE_PREFIX)$(IMAGE_NAME):latest     # latest
 
 .PHONY: docker-tag
 docker-tag:
-	@echo $(IMAGE_PREFIX)pftaskqueue:$(IMAGE_TAG)
+	@echo $(IMAGE_PREFIX)$(IMAGE_NAME):$(IMAGE_TAG)
 
 #
 # Release
