@@ -38,13 +38,14 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DOCKER_BUILDKIT: 1
+      IMAGE_PREFIX: docker.pkg.github.com/pfnet-research/
     steps:
       - name: Check out
         uses: actions/checkout@v2
       - name: Login GitHub Registry
         run: docker login docker.pkg.github.com -u owner -p ${{ secrets.GITHUB_TOKEN }}
       - name: Build Docker image
-        run: make build-image IMAGE_PREFIX=docker.pkg.github.com/pfnet-research/
+        run: make build-image
       - name: Push Docker image
         if: github.ref == 'refs/heads/master' && github.event_name == 'push'
-        run: make push-image IMAGE_PREFIX=docker.pkg.github.com/pfnet-research/
+        run: make push-image
