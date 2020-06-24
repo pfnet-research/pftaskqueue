@@ -553,7 +553,7 @@ func (w *Worker) startStreamToLogger(cmdCtx context.Context, wg *sync.WaitGroup,
 				if allLinesProcessed {
 					return
 				}
-				logger.Info().Msg(strconv.Quote(strings.TrimRight(line, "\n")))
+				logger.Info().Msg(strings.TrimRight(line, "\n"))
 			}
 		}
 	}()
