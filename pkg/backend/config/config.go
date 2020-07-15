@@ -41,14 +41,14 @@ type RedisClientConfig struct {
 	Password string `json:"password" yaml:"password" default:""`
 	DB       int    `json:"db" yaml:"db" default:"0"`
 
-	DialTimeout  time.Duration `json:"dialTimeout" yaml:"dialTimeout" default:"5s"`
-	ReadTimeout  time.Duration `json:"readTimeout" yaml:"readTimeout" default:"3s"`
-	WriteTimeout time.Duration `json:"writeTimeout" yaml:"writeTimeout" default:"3s"`
+	DialTimeout  time.Duration `json:"dialTimeout" yaml:"dialTimeout" default:"30s"`
+	ReadTimeout  time.Duration `json:"readTimeout" yaml:"readTimeout" default:"10m"`
+	WriteTimeout time.Duration `json:"writeTimeout" yaml:"writeTimeout" default:"10m"`
 
 	PoolSize           int           `json:"poolSize" yaml:"poolSize" default:"-"`
 	MinIdleConns       int           `json:"minIdleConns" yaml:"minIdleConns" default:"-"`
 	MaxConnAge         time.Duration `json:"maxConnAge" yaml:"maxConnAge" default:"-"`
-	PoolTimeout        time.Duration `json:"poolTimeout" yaml:"poolTimeout" default:"4s"`
+	PoolTimeout        time.Duration `json:"poolTimeout" yaml:"poolTimeout" default:"-"`
 	IdleTimeout        time.Duration `json:"idleTimeout" yaml:"idleTimeout" default:"5m"`
 	IdleCheckFrequency time.Duration `json:"idleCheckFrequency" yaml:"idleCheckFrequency" default:"1m"`
 }
@@ -77,7 +77,7 @@ type BackoffConfig struct {
 	MaxInterval         time.Duration `json:"maxInterval" yaml:"maxInterval" default:"60s"`
 	// After MaxElapsedTime the ExponentialBackOff returns Stop.
 	// It never stops if MaxElapsedTime == 0.
-	MaxElapsedTime time.Duration `json:"maxElapsedTime" yaml:"maxElapsedTime" default:"1m"`
+	MaxElapsedTime time.Duration `json:"maxElapsedTime" yaml:"maxElapsedTime" default:"10m"`
 	MaxRetry       int64         `json:"maxRetry" yaml:"maxRetry" default:"-1"`
 }
 
