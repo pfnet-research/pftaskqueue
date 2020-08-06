@@ -33,6 +33,7 @@ var (
 	possibleTaskState = []string{
 		"all",
 		"pending",
+		"processing",
 		"completed",
 		"succeeded",
 		"failed",
@@ -71,6 +72,8 @@ var getTaskCmd = &cobra.Command{
 			ts, err = queueBackend.GetAllTasks(cmdContext, queueName)
 		case "pending":
 			ts, err = queueBackend.GetPendingTasks(cmdContext, queueName)
+		case "processing":
+			ts, err = queueBackend.GetProcessingTasks(cmdContext, queueName)
 		case "completed":
 			ts, err = queueBackend.GetCompletedTasks(cmdContext, queueName)
 		case "succeeded":
