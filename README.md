@@ -57,7 +57,7 @@
 - [Managing configurations](#managing-configurations)
   * [Command line flags](#command-line-flags)
   * [Eenvironment variables](#eenvironment-variables)
-  * [Config files](#config-files)
+  * [Config file](#config-file)
 - [Backend configuration reference](#backend-configuration-reference)
   * [Redis](#redis)
 - [Bash/Zsh completion](#bashzsh-completion)

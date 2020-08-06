@@ -225,6 +225,27 @@ func (b *Backend) GetReceivedTasks(ctx context.Context, queueName string) ([]*ta
 	)
 }
 
+func (b *Backend) GetProcessingTasks(ctx context.Context, queueName string) ([]*task.Task, error) {
+	if err := taskqueue.ValidateQueueName(queueName); err != nil {
+		return nil, err
+	}
+	queue, err := b.ensureQueueExistsByName(b.Client, queueName)
+	if err != nil {
+		return nil, err
+	}
+	return b.getTasks(
+		queue.UID.String(),
+		func(t *task.Task) bool {
+			return t.Status.Phase == task.TaskPhaseProcessing
+		},
+		b.Logger.With().
+			Str("queueName", queue.Spec.Name).
+			Str("queueUID", queue.UID.String()).
+			Str("operation", "GetProcessingTasks").
+			Logger(),
+	)
+}
+
 func (b *Backend) GetCompletedTasks(ctx context.Context, queueName string) ([]*task.Task, error) {
 	if err := taskqueue.ValidateQueueName(queueName); err != nil {
 		return nil, err

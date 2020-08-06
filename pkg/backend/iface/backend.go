@@ -61,6 +61,7 @@ type Backend interface {
 	AddTask(ctx context.Context, queueName string, spec task.TaskSpec) (*task.Task, error)
 	NextTask(ctx context.Context, queueUID, workerUID uuid.UUID) (*task.Task, error)
 	GetAllTasks(ctx context.Context, queueName string) ([]*task.Task, error)
+	GetProcessingTasks(ctx context.Context, queueName string) ([]*task.Task, error)
 	GetPendingTasks(ctx context.Context, queueName string) ([]*task.Task, error)
 	GetReceivedTasks(ctx context.Context, queueName string) ([]*task.Task, error)
 	GetCompletedTasks(ctx context.Context, queueName string) ([]*task.Task, error)
