@@ -144,7 +144,7 @@ func init() {
 
 	rootCmd.SetVersionTemplate(VersionString())
 	flag := rootCmd.PersistentFlags()
-	flag.StringVar(&cfgFile, "config", "", "config file path. [default = $PFTQ_CONFIG or $HOME/.pftaskqueue.yaml]")
+	flag.StringVar(&cfgFile, "config", "", "config file path. [default = $PFTQCONFIG or $HOME/.pftaskqueue.yaml]")
 	flag.BoolVar(&displayOpts, "display-options", false, "display loaded config values at startup")
 
 	// Log setting
@@ -239,7 +239,7 @@ func initConfig() {
 	if cfgFile != "" {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
-	} else if env, ok := os.LookupEnv("PFTQ_CONFIG"); ok {
+	} else if env, ok := os.LookupEnv("PFTQCONFIG"); ok {
 		// Use config file from env var.
 		viper.SetConfigFile(env)
 	} else {

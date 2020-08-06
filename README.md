@@ -713,8 +713,8 @@ $ PFTQ_REDIS_ADDR=... pftaskqueue ...
 ### Config file
 
 `pftaskqueue` automatically reads `${HOME}/.pftaskqueue.yaml` if exists.
-Or, you can also set any configuration path with `--config=${CONFIG_FILE_PATH}` flag or `PFTQ_CONFIG` environment variable.
-`--config` flag is prioritized over `PFTQ_CONFIG` environment variable.
+Or, you can also set any configuration path with `--config=${CONFIG_FILE_PATH}` flag or `PFTQCONFIG` environment variable.
+`--config` flag is prioritized over `PFTQCONFIG` environment variable.
 
 To generate config file with default values, please run `print-default-config` command.
 
