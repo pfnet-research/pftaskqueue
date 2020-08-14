@@ -102,6 +102,9 @@ func init() {
 	flag.Bool("exit-on-empty", cmdOpts.Worker.ExitOnEmpty, "if set, worker exits when queue is empty")
 	viperBindPFlag("Worker.ExitOnEmpty", strconv.FormatBool(cmdOpts.Worker.ExitOnEmpty), flag.Lookup("exit-on-empty"))
 
+	flag.Duration("exit-on-empty-grace-period", cmdOpts.Worker.ExitOnEmptyGracePeriod, "if exit-on-empty is true, worker waits for exit in the grace period")
+	viperBindPFlag("Worker.ExitOnEmptyGracePeriod", cmdOpts.Worker.ExitOnEmptyGracePeriod.String(), flag.Lookup("exit-on-empty-grace-period"))
+
 	flag.Int("num-tasks", cmdOpts.Worker.NumTasks, "if set positive value, worker exits after processing the number of tasks")
 	viperBindPFlag("Worker.NumTasks", strconv.Itoa(cmdOpts.Worker.NumTasks), flag.Lookup("num-tasks"))
 

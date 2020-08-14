@@ -122,6 +122,7 @@ func (w *Worker) Start() error {
 }
 
 func (w *Worker) startProcessTasks() error {
+	var queueEmptyDetectedAt *time.Time
 L:
 	for i := w.config.NumTasks; i != 0; i-- {
 		select {
@@ -159,12 +160,21 @@ L:
 					w.smphr.Release(1)
 					continue
 				case backend.TaskQueueEmptyError:
-					if w.config.ExitOnEmpty {
-						w.logger.Info().Bool("exitOnEmpty", w.config.ExitOnEmpty).Msg("Queue is empty. Stopping worker")
+					if queueEmptyDetectedAt == nil {
+						now := time.Now()
+						queueEmptyDetectedAt = &now
+					}
+					logger := w.logger.With().
+						Bool("exitOnEmpty", w.config.ExitOnEmpty).
+						Dur("exitOnEmptyGracePeriod", w.config.ExitOnEmptyGracePeriod).
+						Time("detectedQueueEmptyAt", *queueEmptyDetectedAt).Logger()
+					shouldExitNow := !time.Now().Before(queueEmptyDetectedAt.Add(w.config.ExitOnEmptyGracePeriod))
+					if w.config.ExitOnEmpty && shouldExitNow {
+						logger.Info().Msg("Queue is empty. Stopping worker")
 						w.smphr.Release(1)
 						return nil
 					}
-					w.logger.Debug().Bool("exitOnEmpty", w.config.ExitOnEmpty).Msg("Queue is empty. retrying in 5 seconds.")
+					logger.Info().Msg("Queue is empty. retrying in 5 seconds.")
 					util.SleepContext(w.ctx, 5*time.Second)
 					w.smphr.Release(1)
 					continue
@@ -176,7 +186,7 @@ L:
 				}
 			}
 			w.logger.Debug().Interface("task", taskFetched).Msg("Task fetched")
-
+			queueEmptyDetectedAt = nil
 			w.wg.Add(1)
 			go func() {
 				defer w.smphr.Release(1)

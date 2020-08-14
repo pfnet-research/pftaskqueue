@@ -529,6 +529,8 @@ worker:
   exitOnSuspend: true
   # If true, worker exits when the queue was empty
   exitOnEmpty: false
+  # If exitOnEmpty is true, worker waits for exit in the grace period
+  exitOnEmptyGracePeriod: 10s
   # If the value was positive, worker will exit 
   # after processing the number of tasks
   numTasks: 1000

@@ -62,14 +62,15 @@ type Worker struct {
 }
 
 type WorkerSpec struct {
-	Name          string          `json:"name" yaml:"name" default:"-" validate:"required,min=1,max=256"`
-	Concurrency   int             `json:"concurrency" yaml:"concurrency" default:"1" validate:"required,min=1"`
-	TaskHandler   TaskHandlerSpec `json:"taskHandler" yaml:"taskHandler" validate:"required"`
-	HeartBeat     HeartBeatSpec   `json:"heartBeat" yaml:"heartBeat" validate:"required"`
-	ExitOnSuspend bool            `json:"exitOnSuspend" yaml:"exitOnSuspend" default:"true"`
-	ExitOnEmpty   bool            `json:"exitOnEmpty" yaml:"exitOnEmpty" default:"false"`
-	NumTasks      int             `json:"numTasks" yaml:"numTasks" default:"100"`
-	WorkDir       string          `json:"workDir" yaml:"workDir" default:"/tmp" validate:"isWorkDirValid,required"`
+	Name                   string          `json:"name" yaml:"name" default:"-" validate:"required,min=1,max=256"`
+	Concurrency            int             `json:"concurrency" yaml:"concurrency" default:"1" validate:"required,min=1"`
+	TaskHandler            TaskHandlerSpec `json:"taskHandler" yaml:"taskHandler" validate:"required"`
+	HeartBeat              HeartBeatSpec   `json:"heartBeat" yaml:"heartBeat" validate:"required"`
+	ExitOnSuspend          bool            `json:"exitOnSuspend" yaml:"exitOnSuspend" default:"true"`
+	ExitOnEmpty            bool            `json:"exitOnEmpty" yaml:"exitOnEmpty" default:"false"`
+	ExitOnEmptyGracePeriod time.Duration   `json:"exitOnEmptyGracePeriod" yaml:"exitOnEmptyGracePeriod" default:"10s"`
+	NumTasks               int             `json:"numTasks" yaml:"numTasks" default:"100"`
+	WorkDir                string          `json:"workDir" yaml:"workDir" default:"/tmp" validate:"isWorkDirValid,required"`
 }
 
 type TaskHandlerSpec struct {
