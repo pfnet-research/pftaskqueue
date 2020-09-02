@@ -111,39 +111,53 @@ func (b *Backend) getTasksByUIDs(queueUID string, taskUIDs []string, filter func
 	if len(taskUIDs) == 0 {
 		return []*task.Task{}, nil
 	}
-	taskKeys := []string{}
-	for _, uid := range taskUIDs {
-		taskKeys = append(taskKeys, b.taskKey(queueUID, uid))
+
+	chunks := [][]string{}
+	chunkSize := b.RedisConfig.ChunkSizeInGet
+	for i := 0; i < len(taskUIDs); i += chunkSize {
+		until := len(taskUIDs)
+		if i+chunkSize <= len(taskUIDs) {
+			until = i + chunkSize
+		}
+		chunks = append(chunks, taskUIDs[i:until])
 	}
-	rawTasks, err := b.Client.MGet(taskKeys...).Result()
-	if err != nil {
-		return nil, err
-	}
+
 	tasks := []*task.Task{}
-	for _, rawTask := range rawTasks {
-		if rawTask == nil {
-			lggr.Error().
-				Interface("rawData", nil).
-				Msg("Internal error. rawData is null. Skipped.")
-			continue
+	for _, chunk := range chunks {
+		taskKeys := []string{}
+		for _, uid := range chunk {
+			taskKeys = append(taskKeys, b.taskKey(queueUID, uid))
 		}
-		var t task.Task
-		rawTaskStr, ok := rawTask.(string)
-		if !ok {
-			lggr.Error().
-				Interface("rawData", rawTask).
-				Str("type", reflect.TypeOf(rawTask).String()).
-				Msg("Internal error. rawData should be string. Skipped.")
-			continue
+		rawTasks, err := b.Client.MGet(taskKeys...).Result()
+		if err != nil {
+			return nil, err
 		}
-		if err := json.Unmarshal([]byte(rawTaskStr), &t); err != nil {
-			lggr.Error().Str("data", rawTaskStr).Msg("Failed to unmarshal to Task. Skipped.")
-			continue
-		}
-		if filter(&t) {
-			tasks = append(tasks, &t)
+		for _, rawTask := range rawTasks {
+			if rawTask == nil {
+				lggr.Error().
+					Interface("rawData", nil).
+					Msg("Internal error. rawData is null. Skipped.")
+				continue
+			}
+			var t task.Task
+			rawTaskStr, ok := rawTask.(string)
+			if !ok {
+				lggr.Error().
+					Interface("rawData", rawTask).
+					Str("type", reflect.TypeOf(rawTask).String()).
+					Msg("Internal error. rawData should be string. Skipped.")
+				continue
+			}
+			if err := json.Unmarshal([]byte(rawTaskStr), &t); err != nil {
+				lggr.Error().Str("data", rawTaskStr).Msg("Failed to unmarshal to Task. Skipped.")
+				continue
+			}
+			if filter(&t) {
+				tasks = append(tasks, &t)
+			}
 		}
 	}
+
 	return tasks, nil
 }
 
