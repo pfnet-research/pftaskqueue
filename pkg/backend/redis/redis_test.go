@@ -106,9 +106,10 @@ var _ = Describe("Backend", func() {
 		ibackend, err := NewBackend(logger, backendconfig.Config{
 			BackendType: "redis",
 			Redis: &backendconfig.RedisConfig{
-				KeyPrefix: "test",
-				Client:    client,
-				Backoff:   backoffConfig,
+				KeyPrefix:      "test",
+				Client:         client,
+				Backoff:        backoffConfig,
+				ChunkSizeInGet: 1000,
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())

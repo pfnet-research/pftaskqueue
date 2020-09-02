@@ -205,6 +205,9 @@ func init() {
 	)
 	viperBindPFlag("Redis.IdleCheckFrequency", cmdOpts.Redis.IdleCheckFrequency.String(), flag.Lookup("redis-idle-check-frequency"))
 
+	flag.Int("redis-chunk-size-in-get", cmdOpts.Redis.ChunkSizeInGet, "chunk size when gettings tasks from redis")
+	viperBindPFlag("Redis.ChunkSizeInGet", strconv.Itoa(cmdOpts.Redis.ChunkSizeInGet), flag.Lookup("redis-chunk-size-in-get"))
+
 	// BackoffConfig for redis
 	flag.Duration("redis-backoff-initial-interval", cmdOpts.Redis.Backoff.InitialInterval, "initial interval of exponential backoff used in redis operation")
 	viperBindPFlag("Redis.Backoff.InitialInterval", cmdOpts.Redis.Backoff.InitialInterval.String(), flag.Lookup("redis-backoff-initial-interval"))
@@ -294,9 +297,10 @@ func mustInitializeQueueBackend() {
 		queueBackend, err = backendfactory.NewBackend(logger, backendconfig.Config{
 			BackendType: cmdOpts.Backend,
 			Redis: &backendconfig.RedisConfig{
-				KeyPrefix: cmdOpts.Redis.KeyPrefix,
-				Client:    cmdOpts.Redis.NewClient(),
-				Backoff:   cmdOpts.Redis.Backoff,
+				KeyPrefix:      cmdOpts.Redis.KeyPrefix,
+				Client:         cmdOpts.Redis.NewClient(),
+				Backoff:        cmdOpts.Redis.Backoff,
+				ChunkSizeInGet: cmdOpts.Redis.ChunkSizeInGet,
 			},
 		})
 
