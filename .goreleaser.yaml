@@ -9,7 +9,6 @@ builds:
   binary: pftaskqueue
   goos:
   - linux
-  - windows
   - darwin
   goarch:
   - amd64
