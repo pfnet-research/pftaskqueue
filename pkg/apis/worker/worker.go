@@ -74,7 +74,7 @@ type WorkerSpec struct {
 }
 
 type TaskHandlerSpec struct {
-	DefaultCommandTimeout time.Duration `json:"defaultTimeout" yaml:"defaultTimeout" default:"30m" validate:"required"`
+	DefaultCommandTimeout time.Duration `json:"defaultTimeout" yaml:"defaultTimeout" mapstructure:"defaultTimeout" default:"30m" validate:"required"`
 	Commands              []string      `json:"commands" yaml:"commands" default:"[\"cat\"]" validate:"required"`
 }
 

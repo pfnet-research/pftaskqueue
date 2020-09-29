@@ -94,7 +94,7 @@ func init() {
 	viperBindPFlag("Worker.Concurrency", strconv.Itoa(cmdOpts.Worker.Concurrency), flag.Lookup("concurrency"))
 
 	flag.Duration("default-command-timeout", cmdOpts.Worker.TaskHandler.DefaultCommandTimeout, "default timeout for executing command for tasks. the value will be used when the taskspec has no timeout spec")
-	viperBindPFlag("Worker.TaskHandler.DefaultCommandTimeout", cmdOpts.Worker.TaskHandler.DefaultCommandTimeout.String(), flag.Lookup("default-command-timeout"))
+	viperBindPFlag("Worker.TaskHandler.DefaultTimeout", cmdOpts.Worker.TaskHandler.DefaultCommandTimeout.String(), flag.Lookup("default-command-timeout"))
 
 	flag.Bool("exit-on-suspend", cmdOpts.Worker.ExitOnSuspend, "if set, worker exits when queue is suspended")
 	viperBindPFlag("Worker.ExitOnSuspend", strconv.FormatBool(cmdOpts.Worker.ExitOnSuspend), flag.Lookup("exit-on-suspend"))
