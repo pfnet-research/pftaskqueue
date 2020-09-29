@@ -398,9 +398,11 @@ func (b *Backend) NextTask(ctx context.Context, queueUID, workerUID uuid.UUID) (
 		toPop := false
 		numWorkerPending, err := tx.LLen(workerPendingQueueKey).Result()
 		if err == redis.Nil {
+			b.Logger.Error().Err(err).Stack().Str("redis cmd", fmt.Sprintf("LLEN %s", workerPendingQueueKey)).Msg("debug-next-task")
 			toPop = true
 		}
 		if err != nil {
+			b.Logger.Error().Err(err).Stack().Str("redis cmd", fmt.Sprintf("LLEN %s", workerPendingQueueKey)).Msg("debug-next-task")
 			return err
 		}
 		if numWorkerPending == 0 {
@@ -413,6 +415,7 @@ func (b *Backend) NextTask(ctx context.Context, queueUID, workerUID uuid.UUID) (
 			return nil
 		})
 		if err == redis.Nil {
+
 			return backoff.Permanent(iface.TaskQueueEmptyError)
 		}
 		return err

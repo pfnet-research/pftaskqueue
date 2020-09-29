@@ -20,6 +20,7 @@ package redis
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"time"
 
@@ -271,8 +272,10 @@ func (b *Backend) ensureQueueExistsByUID(rds redis.Cmdable, uid string) (*taskqu
 	rawQueue, err := rds.Get(b.queueKey(uid)).Result()
 	switch {
 	case err == redis.Nil:
+		b.Logger.Error().Err(err).Stack().Str("redis cmd", fmt.Sprintf("GET %s", b.queueKey(uid))).Msg("debug-next-task")
 		return nil, iface.TaskQueueNotFound
 	case err != nil:
+		b.Logger.Error().Stack().Err(err).Str("redis cmd", fmt.Sprintf("GET %s", b.queueKey(uid))).Msg("debug-next-task")
 		return nil, err
 	}
 
