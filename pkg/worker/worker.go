@@ -31,6 +31,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/pfnet-research/pftaskqueue/pkg/apis/taskqueue"
@@ -301,7 +302,11 @@ func (w *Worker) runCommand(logger zerolog.Logger, t *task.Task) (task.TaskResul
 
 	cmdCtx, cmdCtxCancel := context.WithTimeout(w.ctx, t.Spec.ActualTimeout(w.config.TaskHandler.DefaultCommandTimeout))
 	defer cmdCtxCancel()
-	cmd := exec.CommandContext(cmdCtx, w.config.TaskHandler.Commands[0], w.config.TaskHandler.Commands[1:]...)
+
+	cmd := exec.Command(w.config.TaskHandler.Commands[0], w.config.TaskHandler.Commands[1:]...)
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Setpgid: true,
+	}
 
 	// Inject workspace path to stdin
 	rStdout, wStdout := io.Pipe()
@@ -330,6 +335,9 @@ func (w *Worker) runCommand(logger zerolog.Logger, t *task.Task) (task.TaskResul
 	}()
 	select {
 	case <-cmdCtx.Done():
+		if err := syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL); err != nil {
+			streamLogger.Error().Int("pid", cmd.Process.Pid).Err(err).Msg("Failed to kill the process and its descendants")
+		}
 		cmdErr = cmdCtx.Err()
 	case err := <-cmdDone:
 		cmdErr = err
