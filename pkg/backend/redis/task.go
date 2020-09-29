@@ -398,11 +398,11 @@ func (b *Backend) NextTask(ctx context.Context, queueUID, workerUID uuid.UUID) (
 		toPop := false
 		numWorkerPending, err := tx.LLen(workerPendingQueueKey).Result()
 		if err == redis.Nil {
-			b.Logger.Error().Err(err).Stack().Str("redis cmd", fmt.Sprintf("LLEN %s", workerPendingQueueKey)).Msg("debug-next-task")
+			b.Logger.Error().Stack().Err(err).Str("redis cmd", fmt.Sprintf("LLEN %s", workerPendingQueueKey)).Msg("debug-next-task")
 			toPop = true
 		}
 		if err != nil {
-			b.Logger.Error().Err(err).Stack().Str("redis cmd", fmt.Sprintf("LLEN %s", workerPendingQueueKey)).Msg("debug-next-task")
+			b.Logger.Error().Stack().Err(err).Str("redis cmd", fmt.Sprintf("LLEN %s", workerPendingQueueKey)).Msg("debug-next-task")
 			return err
 		}
 		if numWorkerPending == 0 {
@@ -415,12 +415,13 @@ func (b *Backend) NextTask(ctx context.Context, queueUID, workerUID uuid.UUID) (
 			return nil
 		})
 		if err == redis.Nil {
-
+			b.Logger.Error().Stack().Err(err).Msg("debug-next-task: this should not happen.")
 			return backoff.Permanent(iface.TaskQueueEmptyError)
 		}
 		return err
 	}, queueKey, workerPendingQueueKey)
 	if err != nil {
+		b.Logger.Error().Stack().Err(err).Str("redis cmd", fmt.Sprintf("MULTI; RPOPLPUSH %s %s; EXEC", pendingQueueKey, workerPendingQueueKey)).Msg("debug-next-task")
 		return nil, err
 	}
 
@@ -457,9 +458,11 @@ func (b *Backend) NextTask(ctx context.Context, queueUID, workerUID uuid.UUID) (
 			// peak worker pending queue
 			taskUIDs, err := tx.LRange(workerPendingQueueKey, -1, -1).Result()
 			if err == redis.Nil {
+				b.Logger.Error().Stack().Err(err).Str("redis cmd", fmt.Sprintf("LRANGE %s -1 -1", workerPendingQueueKey)).Msg("debug-next-task")
 				return backoff.Permanent(iface.TaskQueueEmptyError)
 			}
 			if err != nil {
+				b.Logger.Error().Stack().Err(err).Str("redis cmd", fmt.Sprintf("LRANGE %s -1 -1", workerPendingQueueKey)).Msg("debug-next-task")
 				return err
 			}
 			if len(taskUIDs) == 0 {
@@ -469,6 +472,7 @@ func (b *Backend) NextTask(ctx context.Context, queueUID, workerUID uuid.UUID) (
 			// get Task and transit to Received
 			raw, err := tx.Get(b.taskKey(queue.UID.String(), taskUIDs[0])).Result()
 			if err != nil {
+				b.Logger.Error().Stack().Err(err).Str("redis cmd", fmt.Sprintf("Get %s", b.taskKey(queue.UID.String(), taskUIDs[0]))).Msg("debug-next-task")
 				return err
 			}
 			t = &task.Task{}
@@ -507,6 +511,7 @@ func (b *Backend) NextTask(ctx context.Context, queueUID, workerUID uuid.UUID) (
 		workerPendingQueueKey, workerTasksKey,
 	)
 	if err != nil {
+		b.Logger.Error().Stack().Err(err).Str("redis cmd", fmt.Sprintf("MULTI; RPOP %s; SADD %s %s; Set %s <marshaled> -1; EXEC", workerPendingQueueKey, workerTasksKey, t.UID, b.taskKey(queue.UID.String(), t.UID))).Msg("debug-next-task")
 		return nil, err
 	}
 	return t, nil
