@@ -360,7 +360,7 @@ func (b *Backend) SalvageWorker(ctx context.Context, queueUID, salvagingWorkerUI
 			pipe.Del(b.workerPendingTaskQueueKey(queue.UID.String(), salvageTargetWorker.UID.String()))
 			pipe.Set(b.workerKey(queue.UID.String(), salvageTargetWorker.UID.String()), marshaledSalvageTargetWorker, -1)
 			for i, t := range tasksToSalvage {
-				if len(t.Status.History) > 0 &&
+				if len(t.Status.History) > 0 && t.Status.History[len(t.Status.History)-1].SalvagedBy != nil &&
 					*t.Status.History[len(t.Status.History)-1].SalvagedBy == salvagingWorker.UID {
 					workerUID := t.Status.History[len(t.Status.History)-1].WorkerUID
 					pipe.SRem(b.workerTasksKey(queue.UID.String(), workerUID), t.UID)
