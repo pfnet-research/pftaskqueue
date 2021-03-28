@@ -531,7 +531,7 @@ worker:
   exitOnEmpty: false
   # If exitOnEmpty is true, worker waits for exit in the grace period
   exitOnEmptyGracePeriod: 10s
-  # If the value was positive, worker will exit 
+  # If the value was non-negative, worker will exit
   # after processing the number of tasks
   numTasks: 1000
   # Base directory to create workspace for task handler processes

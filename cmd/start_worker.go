@@ -105,7 +105,7 @@ func init() {
 	flag.Duration("exit-on-empty-grace-period", cmdOpts.Worker.ExitOnEmptyGracePeriod, "if exit-on-empty is true, worker waits for exit in the grace period")
 	viperBindPFlag("Worker.ExitOnEmptyGracePeriod", cmdOpts.Worker.ExitOnEmptyGracePeriod.String(), flag.Lookup("exit-on-empty-grace-period"))
 
-	flag.Int("num-tasks", cmdOpts.Worker.NumTasks, "if set positive value, worker exits after processing the number of tasks")
+	flag.Int("num-tasks", cmdOpts.Worker.NumTasks, "if set non-negative value, worker exits after processing the number of tasks")
 	viperBindPFlag("Worker.NumTasks", strconv.Itoa(cmdOpts.Worker.NumTasks), flag.Lookup("num-tasks"))
 
 	flag.String("work-dir", cmdOpts.Worker.WorkDir, "worker's working directory.  the dir must be writable")
