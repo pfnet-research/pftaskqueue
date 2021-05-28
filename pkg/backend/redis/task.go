@@ -41,7 +41,7 @@ const (
 	KB                 = 1 << 10
 	PayloadMaxSizeInKB = 1
 	MessageMaxSizeInKB = 1
-	RetryLimitMax      = 10
+	HistoryLengthMax   = 10
 	MaxNameLength      = 1024
 )
 
@@ -650,6 +650,7 @@ func (b *Backend) SetSucceeded(ctx context.Context, queueUID, workerUID uuid.UUI
 		err = t.SetSuccess(
 			util.Truncate(resultPayload, PayloadMaxSizeInKB*KB),
 			util.Truncate(message, MessageMaxSizeInKB*KB),
+			HistoryLengthMax,
 		)
 		if err != nil {
 			dlerr := b.invalidMessageDLError(
@@ -791,6 +792,7 @@ func (b *Backend) RecordFailure(ctx context.Context, queueUID, workerUID uuid.UU
 			reason,
 			util.Truncate(resultPayload, PayloadMaxSizeInKB*KB),
 			util.Truncate(message, MessageMaxSizeInKB*KB),
+			HistoryLengthMax,
 		)
 		if err != nil {
 			dlerr := b.invalidMessageDLError(
@@ -922,11 +924,6 @@ func (b *Backend) validateTaskSpec(s task.TaskSpec) error {
 	if len(s.Payload) > maxBytes {
 		vErrors = multierror.Append(vErrors,
 			errors.Errorf("TaskSpec.Payload max size is %d Bytes (actual=%d Bytes)", maxBytes, len(s.Payload)),
-		)
-	}
-	if s.RetryLimit > RetryLimitMax {
-		vErrors = multierror.Append(vErrors,
-			errors.Errorf("TaskSpec.retryLimit max is %d (actual=%d)", RetryLimitMax, s.RetryLimit),
 		)
 	}
 	if vErrors != nil {

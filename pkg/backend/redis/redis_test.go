@@ -89,6 +89,7 @@ var (
 		TimeoutSeconds: 60,
 	}
 	SampleInvalidTaskSpec = task.TaskSpec{
+		Name:           strings.Repeat("a", MaxNameLength+1),
 		Payload:        strings.Repeat("x", PayloadMaxSizeInKB*KB+1),
 		RetryLimit:     100,
 		TimeoutSeconds: 0,
@@ -712,8 +713,8 @@ var _ = Describe("Backend", func() {
 						vErr, ok := err.(*util.ValidationError)
 						Expect(ok).To(Equal(true))
 						Expect(len(vErr.Errors)).To(Equal(2))
+						Expect(vErr.Error()).To(ContainSubstring("TaskSpec.Name max length"))
 						Expect(vErr.Error()).To(ContainSubstring("TaskSpec.Payload max size is"))
-						Expect(vErr.Error()).To(ContainSubstring("TaskSpec.retryLimit max is"))
 					})
 				})
 				When("Spec is valid", func() {

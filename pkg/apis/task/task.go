@@ -178,7 +178,7 @@ func (t *Task) IsWorkerLost(defaultTimeoutSeconds int) bool {
 	return t.Status.CurrentRecord.ReceivedAt.Add(timeout).Before(time.Now())
 }
 
-func (t *Task) SetSuccess(payload *string, message *string) error {
+func (t *Task) SetSuccess(payload *string, message *string, historyLengthLimit int) error {
 	if t.Status.Phase != TaskPhaseProcessing {
 		return errors.Errorf("invalid status: actual=%s expected=%s", t.Status.Phase, TaskPhaseProcessing)
 	}
@@ -205,10 +205,14 @@ func (t *Task) SetSuccess(payload *string, message *string) error {
 	}
 	t.Status.History = append(t.Status.History, *current)
 
+	if len(t.Status.History) > historyLengthLimit {
+		t.Status.History = t.Status.History[len(t.Status.History)-historyLengthLimit:]
+	}
+
 	return nil
 }
 
-func (t *Task) RecordFailure(reason TaskResultReason, payload *string, message *string) (bool, error) {
+func (t *Task) RecordFailure(reason TaskResultReason, payload *string, message *string, historyLengthLimit int) (bool, error) {
 	if t.Status.Phase != TaskPhaseProcessing && t.Status.Phase != TaskPhaseReceived {
 		return false, errors.Errorf("invalid status: actual=%s expected=[%s,%s]", t.Status.Phase, TaskPhaseProcessing, TaskPhaseReceived)
 	}
@@ -233,13 +237,16 @@ func (t *Task) RecordFailure(reason TaskResultReason, payload *string, message *
 		t.Status.History = []TaskRecord{}
 	}
 	t.Status.History = append(t.Status.History, *current)
+	if len(t.Status.History) > historyLengthLimit {
+		t.Status.History = t.Status.History[len(t.Status.History)-historyLengthLimit:]
+	}
+
 	t.Status.FailureCount = t.Status.FailureCount + 1
 
 	requeue := true
 	t.Status.Phase = TaskPhasePending
-
 	// no requeue because retry exceeded
-	if t.Status.FailureCount > t.Spec.RetryLimit {
+	if t.Spec.RetryLimit >= 0 && t.Status.FailureCount > t.Spec.RetryLimit {
 		requeue = false
 		t.Status.Phase = TaskPhaseFailed
 	}
