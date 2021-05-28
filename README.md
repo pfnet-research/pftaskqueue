@@ -319,8 +319,10 @@ name: "this is just an display name"
 #  redis: 1KB
 payload: |
   You can define any task information in payload
-# retryLimit max value varies on backend type to prevent from overloading backend.
-#  redis: 10
+# retryLimit is the maximum number of retry (negative number means infinite)
+# NOTE: only the limited number of recent task records will be recorded in its status.
+#       so, if you set large value or infinite here, you will loose old task records.
+#       please see the description of status.history field in the next section.
 retryLimit: 3
 # timeoutSeconds is for task handler timeout.
 # If set positive value, task handler timeout for processing this task.
@@ -361,7 +363,12 @@ status:
     # timestamps
     receivedAt: 2020-02-12T20:20:39.350631+09:00
     startedAt: 2020-02-12T20:20:39.351479+09:00
-  # history of processing the task.
+  # history of recent records of processing the task.
+  # the limited number of recent records are recorded in this field.
+  # the value varies on backend types to prvent overloading backends:
+  # - redis: 10 entries
+  # NOTE: so, if you set larger value than this limit in spec.rertryLimit,
+  #       you will loose old task records.
   history:
     # TaskRecord: 
     #   this represents a record of task handler invocation 
