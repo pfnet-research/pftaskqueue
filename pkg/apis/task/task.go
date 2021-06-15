@@ -54,7 +54,7 @@ type Task struct {
 }
 
 type TaskSpec struct {
-	Name           string `json:"name" yaml:"name"`
+	Name           string `json:"name" yaml:"name,omitempty"`
 	Payload        string `json:"payload" yaml:"payload"`
 	RetryLimit     int    `json:"retryLimit,omitempty" yaml:"retryLimit,omitempty"`
 	TimeoutSeconds int    `json:"timeoutSeconds,omitempty" yaml:"timeoutSeconds,omitempty"`
