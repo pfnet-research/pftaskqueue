@@ -52,6 +52,7 @@ import (
 
 const (
 	TaskHandlerWorkdirEnvVarName = "PFTQ_TASK_HANDLER_WORKSPACE_DIR"
+	TaskHandlerInputEnvVarPrefix = "PFTQ_TASK_HANDLER_INPUT_"
 )
 
 func NewWorker(ctx context.Context, logger zerolog.Logger, backend backend.Backend, cfg config.WorkerConfig) (*Worker, error) {
@@ -288,7 +289,7 @@ func (w *Worker) runCommand(logger zerolog.Logger, t *task.Task) (task.TaskResul
 		return result, []task.TaskSpec{}
 	}
 
-	workspacePath, err := w.prepareTaskHandlerDir(t)
+	workspacePath, envvars, err := w.prepareTaskHandlerDirAndEnvvars(t)
 	if err != nil {
 		msg := "Can't prepare workspace dir for task handler process"
 		result := task.TaskResult{
@@ -307,6 +308,7 @@ func (w *Worker) runCommand(logger zerolog.Logger, t *task.Task) (task.TaskResul
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: true,
 	}
+	cmd.Env = append(os.Environ(), envvars...)
 
 	// Inject workspace path to stdin
 	rStdout, wStdout := io.Pipe()
@@ -314,7 +316,6 @@ func (w *Worker) runCommand(logger zerolog.Logger, t *task.Task) (task.TaskResul
 	cmd.Stdin = strings.NewReader(workspacePath)
 	cmd.Stdout = wStdout
 	cmd.Stderr = wStderr
-	cmd.Env = append(os.Environ(), fmt.Sprintf("%s=%s", TaskHandlerWorkdirEnvVarName, workspacePath))
 
 	streamWg := sync.WaitGroup{}
 	streamLogger := w.parentLogger.With().Str("taskUID", t.UID).Str("processUID", t.Status.CurrentRecord.ProcessUID).Logger()
@@ -404,84 +405,100 @@ func (w *Worker) workspacePath(t *task.Task) string {
 //  {task workspace path}/
 //    input/
 //      # taskspec info
-//      payload
-//      retryLimit
-//      timeoutSeconds
+//      payload             # also exported as PFTQ_TASK_HANDLER_INPUT_PAYLOAD
+//      retryLimit          # also exported as PFTQ_TASK_HANDLER_INPUT_RETRY_LIMIT
+//      timeoutSeconds      # also exported as PFTQ_TASK_HANDLER_INPUT_TIMEOUT_SECONDS
 //      meta/
-//		  taskUID
-//        task.json
+//		  taskUID           # also exported as PFTQ_TASK_HANDLER_INPUT_TASK_UID
+//        task.json         # also exported as PFTQ_TASK_HANDLER_INPUT_TASK_JSON
+//        processUID        # also exported as PFTQ_TASK_HANDLER_INPUT_PROCESS_UID
 //        # worker info
-//        workerName
-//        workerUID
-//        processUID
-//        workerConfig.json
+//        workerName        # also exported as PFTQ_TASK_HANDLER_INPUT_WORKER_NAME
+//        workerUID         # also exported as PFTQ_TASK_HANDLER_INPUT_WORKER_UID
+//        workerConfig.json # also exported as PFTQ_TASK_HANDLER_INPUT_WORKER_CONFIG_JSON
 //    output/
-func (w *Worker) prepareTaskHandlerDir(t *task.Task) (string, error) {
+func (w *Worker) prepareTaskHandlerDirAndEnvvars(t *task.Task) (string, []string, error) {
 	inputOutputDirPermission := os.FileMode(0750)
 	inputFilePermission := os.FileMode(0440)
 	workspacePath := w.workspacePath(t)
 	inputPath := filepath.Join(workspacePath, "input")
 	inputMetaPath := filepath.Join(workspacePath, "input", "meta")
+
+	envvars := []string{
+		fmt.Sprintf("%s=%s", TaskHandlerWorkdirEnvVarName, workspacePath),
+	}
+
 	if err := os.MkdirAll(inputMetaPath, inputOutputDirPermission); err != nil {
-		return "", err
+		return "", nil, err
 	}
 	outputPath := filepath.Join(workspacePath, "output")
 	if err := os.MkdirAll(outputPath, inputOutputDirPermission); err != nil {
-		return "", err
+		return "", nil, err
 	}
 
 	payloadPath := filepath.Join(inputPath, "payload")
 	if err := ioutil.WriteFile(payloadPath, []byte(t.Spec.Payload), inputFilePermission); err != nil {
-		return "", err
+		return "", nil, err
 	}
+	envvars = append(envvars, fmt.Sprintf("%s=%s", TaskHandlerInputEnvVarPrefix+"PAYLOAD", t.Spec.Payload))
+
 	retryLimitPath := filepath.Join(inputPath, "retryLimit")
 	if err := ioutil.WriteFile(retryLimitPath, []byte(strconv.Itoa(t.Spec.RetryLimit)), inputFilePermission); err != nil {
-		return "", err
+		return "", nil, err
 	}
+	envvars = append(envvars, fmt.Sprintf("%s=%s", TaskHandlerInputEnvVarPrefix+"RETRY_LIMIT", strconv.Itoa(t.Spec.RetryLimit)))
+
 	timeoutSecondsPath := filepath.Join(inputPath, "timeoutSeconds")
 	if err := ioutil.WriteFile(timeoutSecondsPath, []byte(strconv.Itoa(t.Spec.TimeoutSeconds)), inputFilePermission); err != nil {
-		return "", err
+		return "", nil, err
 	}
+	envvars = append(envvars, fmt.Sprintf("%s=%s", TaskHandlerInputEnvVarPrefix+"TIMEOUT_SECONDS", strconv.Itoa(t.Spec.TimeoutSeconds)))
 
 	taskUIDPath := filepath.Join(inputMetaPath, "taskUID")
 	if err := ioutil.WriteFile(taskUIDPath, []byte(t.UID), 0400); err != nil {
-		return "", err
+		return "", nil, err
 	}
+	envvars = append(envvars, fmt.Sprintf("%s=%s", TaskHandlerInputEnvVarPrefix+"TASK_UID", t.UID))
 
 	processUIDPath := filepath.Join(inputMetaPath, "processUID")
 	if err := ioutil.WriteFile(processUIDPath, []byte(t.Status.CurrentRecord.ProcessUID), inputFilePermission); err != nil {
-		return "", err
+		return "", nil, err
 	}
+	envvars = append(envvars, fmt.Sprintf("%s=%s", TaskHandlerInputEnvVarPrefix+"PROCESS_UID", t.Status.CurrentRecord.ProcessUID))
 
 	taskJsonPath := filepath.Join(inputMetaPath, "task.json")
 	taskJsonBytes, err := json.Marshal(t)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 	if err := ioutil.WriteFile(taskJsonPath, taskJsonBytes, inputFilePermission); err != nil {
-		return "", err
+		return "", nil, err
 	}
+	envvars = append(envvars, fmt.Sprintf("%s=%s", TaskHandlerInputEnvVarPrefix+"TASK_JSON", string(taskJsonBytes)))
 
 	workerNamePath := filepath.Join(inputMetaPath, "workerName")
 	if err := ioutil.WriteFile(workerNamePath, []byte(w.config.Name), inputFilePermission); err != nil {
-		return "", err
+		return "", nil, err
 	}
+	envvars = append(envvars, fmt.Sprintf("%s=%s", TaskHandlerInputEnvVarPrefix+"WORKER_NAME", w.config.Name))
 
 	workerUIDPath := filepath.Join(inputMetaPath, "workerUID")
 	if err := ioutil.WriteFile(workerUIDPath, []byte(w.uid.String()), inputFilePermission); err != nil {
-		return "", err
+		return "", nil, err
 	}
+	envvars = append(envvars, fmt.Sprintf("%s=%s", TaskHandlerInputEnvVarPrefix+"WORKER_UID", w.uid.String()))
 
 	workerConfigJson := filepath.Join(inputMetaPath, "workerConfig.json")
 	workerConfigJsonBytes, err := json.Marshal(&(w.config))
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 	if err := ioutil.WriteFile(workerConfigJson, workerConfigJsonBytes, inputFilePermission); err != nil {
-		return "", err
+		return "", nil, err
 	}
+	envvars = append(envvars, fmt.Sprintf("%s=%s", TaskHandlerInputEnvVarPrefix+"WORKER_CONFIG_JSON", string(workerConfigJsonBytes)))
 
-	return workspacePath, nil
+	return workspacePath, envvars, nil
 }
 
 //  {task workspace path}/

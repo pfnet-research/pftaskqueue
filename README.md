@@ -628,23 +628,33 @@ pftaskqueue get-worker [queue] --state=[all,running,succeeded,failed,lost,tosalv
 
 ### Input/Output
 
-`pftaskquue` communicates with task handler process via files.  `pftaskqueue` passes its workspace directory to `stdio` of task handler process.  It also defines `PFTQ_TASK_HANDLER_WORKSPACE_DIR` environment variable for each task handler process. The directory structure as below.
+`pftaskquue` communicates with task handler process via files.  `pftaskqueue` passes its workspace directory to `stdin` of task handler process.  It also defines `PFTQ_TASK_HANDLER_WORKSPACE_DIR` environment variable for each task handler process. The directory structure as below. All the inputs are also exported as environment variables whose names are prefixed with `PFTQ_TASK_HANDLER_INPUT_`.
 
 ```
-{workspace direcoty}
+┌ {workspace direcoty}             # pftaskqueue passes the dir name to stdin of task handler process
+│                                  # also exported as PFTQ_TASK_HANDLER_WORKSPACE_DIR
 │
 │   # pftaskqueue prepares whole the contents
 ├── input
-│   ├── payload                  # TaskSpec.payload in text format
+│   ├── payload                  # TaskSpec.payload in text format 
+│   │　　                          # also exported as PFTQ_TASK_HANDLER_INPUT_PAYLOAD
 │   ├── retryLimit               # TaskSpec.retryLimit in text format
+│   │　　                          # also exported as PFTQ_TASK_HANDLER_INPUT_RETRY_LIMIT
 │   ├── timeoutSeconds           # TaskSpec.timeoutSeconds in text format
+│   │　　                          # also exported as PFTQ_TASK_HANDLER_INPUT_TIMEOUT_SECONDS
 │   └── meta
 │       ├── taskUID            # taskUID of the task in text format
+│       │　　                    # also exported as PFTQ_TASK_HANDLER_INPUT_TASK_UID
 │       ├── processUID         # prrocessUID of the task handler process
+│       │　　                    # also exported as PFTQ_TASK_HANDLER_INPUT_PROCESS_UID
 │       ├── task.json          # whole task information in JSON format
+│       │　　                    # also exported as PFTQ_TASK_HANDLER_INPUT_TASK_JSON
 │       ├── workerName         # workerName of the worker process
+│       │　　                    # also exported as PFTQ_TASK_HANDLER_INPUT_WORKER_NAME
 │       ├── workerUID          # workerUID of the worker process
+│       │　　                    # also exported as PFTQ_TASK_HANDLER_INPUT_WORKER_UID
 │       └── workerConfig.json  # whole workerConfig information in JSON format
+│       　　　                    # also exported as PFTQ_TASK_HANDLER_INPUT_WORKER_CONFIG_JSON
 │
 │   # pftaskqueue just creates the directory
 │   # If any error happened in reading files in the directory, the task fails with the TaskResult below.
@@ -654,16 +664,16 @@ pftaskqueue get-worker [queue] --state=[all,running,succeeded,failed,lost,tosalv
 │   #   payload: null
 └── output
     ├── payload                     # If the file exists, the contents will record in TaskResult.payload. Null otherwise.
-    │                               # Max size of the payload varies on backend type to avoid from overloading backend
-    │                               #   redis: 1KB
-    │                               # If size exceeded, truncated contents will be recorded.
+    │　　                             # Max size of the payload varies on backend type to avoid from overloading backend
+    │　　                             #   redis: 1KB
+    │　　                             # If size exceeded, truncated contents will be recorded.
     ├── message                     # If the file exists, the contents will record in TaskResult.message. Null otherwise.
-    │                               # Max size of the payload varies on backend type to avoid from overloading backend
-    │                               #   redis: 1KB
-    │                               # If size exceeded, truncated contents will be recorded.
+    │　　                             # Max size of the payload varies on backend type to avoid from overloading backend
+    │　　                             #   redis: 1KB
+    │　　                             # If size exceeded, truncated contents will be recorded.
     └── postHooks.json              # postHook TaskSpecs in JSON array format
-                                    # If the file exists, the contents will be queued automatically.
-                                    # e.g. [{"payload": "foo", "retryLimit": "3", "timeout": "10m"}]
+    　　　                             # If the file exists, the contents will be queued automatically.
+    　　　                             # e.g. [{"payload": "foo", "retryLimit": "3", "timeout": "10m"}]
 
 3 directories, 12 files
 ```

@@ -94,6 +94,7 @@ var _ = Describe("Worker", func() {
 						"bash",
 						"-c",
 						heredoc.Doc(`
+							set -eu
 							DIR=$(cat)
 							ls -lR ${DIR}/input
 							PAYLOAD=$(cat ${DIR}/input/payload)
@@ -106,6 +107,17 @@ var _ = Describe("Worker", func() {
 								echo '[{"payload": "hook", "timeoutSeconds": 5}]' > ${DIR}/output/postHooks.json
 							fi
 							ls -alR ${DIR}/output 1>&2
+
+							echo ${PFTQ_TASK_HANDLER_WORKSPACE_DIR}
+							echo ${PFTQ_TASK_HANDLER_INPUT_PAYLOAD}
+							echo ${PFTQ_TASK_HANDLER_INPUT_RETRY_LIMIT}
+							echo ${PFTQ_TASK_HANDLER_INPUT_TIMEOUT_SECONDS}
+							echo ${PFTQ_TASK_HANDLER_INPUT_TASK_UID}
+							echo ${PFTQ_TASK_HANDLER_INPUT_TASK_JSON}
+							echo ${PFTQ_TASK_HANDLER_INPUT_PROCESS_UID}
+							echo ${PFTQ_TASK_HANDLER_INPUT_WORKER_NAME}
+							echo ${PFTQ_TASK_HANDLER_INPUT_WORKER_UID}
+							echo ${PFTQ_TASK_HANDLER_INPUT_WORKER_CONFIG_JSON}
 						`),
 					},
 				},
