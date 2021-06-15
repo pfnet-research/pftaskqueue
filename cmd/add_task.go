@@ -40,7 +40,7 @@ var addTaskCmd = &cobra.Command{
 	Use:   "add-task [queue]",
 	Short: "Add Tasks To Queue",
 	Long: `Add Tasks To Queue. This commands reads YAML formatted 'TaskSpec's (not array) from Stdin.
-cat <EOT | pftaskqueue add-tasks
+cat << EOT | pftaskqueue add-task [queue-name]
 payload: "foo"
 retryLimit: 0
 timeoutSeconds: 100
