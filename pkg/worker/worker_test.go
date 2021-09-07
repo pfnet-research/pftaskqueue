@@ -74,9 +74,10 @@ var _ = Describe("Worker", func() {
 		bcknd, err = backendfactory.NewBackend(logger, backendconfig.Config{
 			BackendType: "redis",
 			Redis: &backendconfig.RedisConfig{
-				Client:         client,
-				Backoff:        backendConfig,
-				ChunkSizeInGet: 1000,
+				Client:            client,
+				Backoff:           backendConfig,
+				ChunkSizeInGet:    1000,
+				ChunkSizeInDelete: 1000,
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())

@@ -218,7 +218,7 @@ func (b *Backend) DeleteQueue(ctx context.Context, queueName string) error {
 	// .. task_keys = collect task keys
 	// WATCh task_keys
 	// MULTI
-	// DEL {queue_key} worker_keys task_keys
+	// UNLINK {queue_key} worker_keys task_keys
 	// HDEL {all_queues_key} {queueName}
 	// EXEC
 	txf := func(tx *redis.Tx) error {
@@ -240,8 +240,16 @@ func (b *Backend) DeleteQueue(ctx context.Context, queueName string) error {
 		tx.Watch(taskKeysToDelete...)
 		keysToDelete = append(keysToDelete, taskKeysToDelete...)
 
+		chunkSize := b.ChunkSizeInGet
+		numOfKeysToDelete := len(keysToDelete)
 		_, err = tx.TxPipelined(func(pipe redis.Pipeliner) error {
-			pipe.Del(keysToDelete...)
+			for begin := 0; begin < numOfKeysToDelete; begin += chunkSize {
+				end := begin + chunkSize
+				if end > numOfKeysToDelete {
+					end = numOfKeysToDelete
+				}
+				pipe.Unlink(keysToDelete[begin:end]...)
+			}
 			pipe.HDel(b.allQueuesKey(), queue.Spec.Name)
 			return nil
 		})

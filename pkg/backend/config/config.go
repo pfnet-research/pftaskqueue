@@ -30,10 +30,11 @@ type Config struct {
 }
 
 type RedisConfig struct {
-	KeyPrefix      string
-	Client         *redis.Client
-	Backoff        BackoffConfig
-	ChunkSizeInGet int
+	KeyPrefix         string
+	Client            *redis.Client
+	Backoff           BackoffConfig
+	ChunkSizeInGet    int
+	ChunkSizeInDelete int
 }
 
 // TODO: support UniversalOptions
@@ -52,7 +53,8 @@ type RedisClientConfig struct {
 	IdleTimeout        time.Duration `json:"idleTimeout" yaml:"idleTimeout" default:"5m"`
 	IdleCheckFrequency time.Duration `json:"idleCheckFrequency" yaml:"idleCheckFrequency" default:"1m"`
 
-	ChunkSizeInGet int `json:"chunkSizeInGet" yaml:"chunkSizeInGet" default:"10000"`
+	ChunkSizeInGet    int `json:"chunkSizeInGet" yaml:"chunkSizeInGet" default:"10000"`
+	ChunkSizeInDelete int `json:"chunkSizeInDelete" yaml:"chunkSizeInGet" default:"1000"`
 }
 
 func (c RedisClientConfig) NewClient() *redis.Client {

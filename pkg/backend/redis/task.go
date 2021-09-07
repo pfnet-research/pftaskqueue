@@ -38,11 +38,11 @@ import (
 )
 
 const (
-	KB                     = 1 << 10
-	PayloadMaxSizeInKB     = 1
-	MessageMaxSizeInKB     = 1
-	HistoryLengthMax       = 10
-	MaxNameLength          = 1024
+	KB                 = 1 << 10
+	PayloadMaxSizeInKB = 1
+	MessageMaxSizeInKB = 1
+	HistoryLengthMax   = 10
+	MaxNameLength      = 1024
 )
 
 func (b *Backend) ensureQueueAndWorkerExists(queueUID, workerUID uuid.UUID) (*taskqueue.TaskQueue, *worker.Worker, error) {
