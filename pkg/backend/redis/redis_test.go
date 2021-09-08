@@ -278,6 +278,26 @@ var _ = Describe("Backend", func() {
 					Expect(err).To(Equal(iface.TaskQueueNotFound))
 				})
 			})
+			When("the large queue exists", func() {
+				It("can delete the queue", func() {
+					queue := testutil.MustCreateQueue(backend, SampleQueueSpec)
+					// numOfTasks % chunkSize != 0 && numOfTasks > chunkSize
+					numOfTasks := 12345
+					for i := 0; i < numOfTasks; i++ {
+						_, err := backend.AddTask(context.Background(), QueueName, SampleTaskSpec)
+						Expect(err).NotTo(HaveOccurred())
+					}
+
+					Expect(backend.DeleteQueue(context.Background(), SampleQueueSpec.Name)).NotTo(HaveOccurred())
+
+					queuesHash, err := client.HGetAll(backend.allQueuesKey()).Result()
+					Expect(err).NotTo(HaveOccurred())
+					Expect(len(queuesHash)).To(Equal(0))
+					keys, err := client.Keys(backend.queueKey(queue.UID.String()) + "*").Result()
+					Expect(err).NotTo(HaveOccurred())
+					Expect(len(keys)).To(Equal(0))
+				})
+			})
 		})
 	})
 
