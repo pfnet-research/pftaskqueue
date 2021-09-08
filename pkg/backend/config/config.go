@@ -54,7 +54,7 @@ type RedisClientConfig struct {
 	IdleCheckFrequency time.Duration `json:"idleCheckFrequency" yaml:"idleCheckFrequency" default:"1m"`
 
 	ChunkSizeInGet    int `json:"chunkSizeInGet" yaml:"chunkSizeInGet" default:"10000"`
-	ChunkSizeInDelete int `json:"chunkSizeInDelete" yaml:"chunkSizeInGet" default:"1000"`
+	ChunkSizeInDelete int `json:"chunkSizeInDelete" yaml:"chunkSizeInDelete" default:"1000"`
 }
 
 func (c RedisClientConfig) NewClient() *redis.Client {
