@@ -32,6 +32,7 @@ var (
 	TaskQueueNotFound         = errors.New("Queue not found")
 	TaskQueueExisted          = errors.New("Queue already exists")
 	TaskQueueEmptyError       = errors.New("Queue is empty")
+	TaskQueueIsTooLarge       = errors.New("Queue have many tasks so we need --without_transaction option")
 	TaskSuspendedError        = errors.New("Queue is suspended")
 	WorkerNotFound            = errors.New("Worker not found")
 	WorkerExitedError         = errors.New("Worker already exists")

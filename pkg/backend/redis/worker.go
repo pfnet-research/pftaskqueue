@@ -483,7 +483,7 @@ func (b *Backend) ensureWorkerExistsByUID(rds redis.Cmdable, queue *taskqueue.Ta
 }
 
 func (b *Backend) allWorkersKeysForDeleteQueue(rds redis.Cmdable, queueUID string) ([]string, error) {
-	keysToDelete := []string{b.workersKey(queueUID)}
+	keysToDelete := []string{}
 	workerUIDs, err := rds.SMembers(b.workersKey(queueUID)).Result()
 	if err == redis.Nil {
 		return []string{}, nil
@@ -497,5 +497,8 @@ func (b *Backend) allWorkersKeysForDeleteQueue(rds redis.Cmdable, queueUID strin
 			b.workerPendingTaskQueueKey(queueUID, workerUID),
 			b.workerTasksKey(queueUID, workerUID))
 	}
+
+	// If you are not using transactions, you need to delete the wokers key at the end.
+	keysToDelete = append(keysToDelete, b.workersKey(queueUID))
 	return keysToDelete, nil
 }
