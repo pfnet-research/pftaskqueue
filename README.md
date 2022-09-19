@@ -599,7 +599,7 @@ status:
 
 Once worker started, it starts with `Running` phase.  In the startup, a worker register self to the queue and get its UID. The UID becomes the identifier of workers.  If worker exited normally (with `exit-code=0`), it transits `Succeeded` phase. If `exit-code` was not 0, it transits to `Failed` phase.
 
-However, worker process was go away by various reasons (`SIGKILL`-ed, `OOMKiller`, etc.).  Then, how to detect those worker's sate?  `pftaskquue` applies simple timeout based heuristics.  A worker process keeps sending heartbeat during it runs, with configured interval, to the queue by updating its `Status.lastHeartBeatAt` field.  If the heartbeat became older then configured expiration duration,  the worker was determined as 'Lost' state (`phase=Failed, reason=Lost`).  Moreover when a worker detects their own heartbeat expired, they exited by their selves to wait they will be salvaged by other workers.
+However, worker process was go away by various reasons (`SIGKILL`-ed, `OOMKiller`, etc.).  Then, how to detect those worker's sate?  `pftaskqueue` applies simple timeout based heuristics.  A worker process keeps sending heartbeat during it runs, with configured interval, to the queue by updating its `Status.lastHeartBeatAt` field.  If the heartbeat became older then configured expiration duration,  the worker was determined as 'Lost' state (`phase=Failed, reason=Lost`).  Moreover when a worker detects their own heartbeat expired, they exited by their selves to wait they will be salvaged by other workers.
 
 On every worker startup,  a worker tries to find `Lost` workers which are safe to be salvaged.  `pftaskqueue` also used simple timeout-based heuristics in salvation, too.  If time passed `Worker.HeartBeat.SalvagedDuration` after its heartbeat expiration, the worker is determined as a salvation target.  Once the worker finds some salvation target workers,  it will salvage the worker.  "Salvation" means
 
@@ -628,7 +628,7 @@ pftaskqueue get-worker [queue] --state=[all,running,succeeded,failed,lost,tosalv
 
 ### Input/Output
 
-`pftaskquue` communicates with task handler process via files.  `pftaskqueue` passes its workspace directory to `stdin` of task handler process.  It also defines `PFTQ_TASK_HANDLER_WORKSPACE_DIR` environment variable for each task handler process. The directory structure as below. All the inputs are also exported as environment variables whose names are prefixed with `PFTQ_TASK_HANDLER_INPUT_`.
+`pftaskqueue` communicates with task handler process via files.  `pftaskqueue` passes its workspace directory to `stdin` of task handler process.  It also defines `PFTQ_TASK_HANDLER_WORKSPACE_DIR` environment variable for each task handler process. The directory structure as below. All the inputs are also exported as environment variables whose names are prefixed with `PFTQ_TASK_HANDLER_INPUT_`.
 
 ```
 ┌ {workspace direcoty}             # pftaskqueue passes the dir name to stdin of task handler process
