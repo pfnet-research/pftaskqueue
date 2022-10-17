@@ -402,21 +402,21 @@ func (w *Worker) workspacePath(t *task.Task) string {
 	return filepath.Join(w.thisWorkerWorkDir(), t.Status.CurrentRecord.ProcessUID)
 }
 
-//  {task workspace path}/
-//    input/
-//      # taskspec info
-//      payload             # also exported as PFTQ_TASK_HANDLER_INPUT_PAYLOAD
-//      retryLimit          # also exported as PFTQ_TASK_HANDLER_INPUT_RETRY_LIMIT
-//      timeoutSeconds      # also exported as PFTQ_TASK_HANDLER_INPUT_TIMEOUT_SECONDS
-//      meta/
-//		  taskUID           # also exported as PFTQ_TASK_HANDLER_INPUT_TASK_UID
-//        task.json         # also exported as PFTQ_TASK_HANDLER_INPUT_TASK_JSON
-//        processUID        # also exported as PFTQ_TASK_HANDLER_INPUT_PROCESS_UID
-//        # worker info
-//        workerName        # also exported as PFTQ_TASK_HANDLER_INPUT_WORKER_NAME
-//        workerUID         # also exported as PFTQ_TASK_HANDLER_INPUT_WORKER_UID
-//        workerConfig.json # also exported as PFTQ_TASK_HANDLER_INPUT_WORKER_CONFIG_JSON
-//    output/
+//	 {task workspace path}/
+//	   input/
+//	     # taskspec info
+//	     payload             # also exported as PFTQ_TASK_HANDLER_INPUT_PAYLOAD
+//	     retryLimit          # also exported as PFTQ_TASK_HANDLER_INPUT_RETRY_LIMIT
+//	     timeoutSeconds      # also exported as PFTQ_TASK_HANDLER_INPUT_TIMEOUT_SECONDS
+//	     meta/
+//			  taskUID           # also exported as PFTQ_TASK_HANDLER_INPUT_TASK_UID
+//	       task.json         # also exported as PFTQ_TASK_HANDLER_INPUT_TASK_JSON
+//	       processUID        # also exported as PFTQ_TASK_HANDLER_INPUT_PROCESS_UID
+//	       # worker info
+//	       workerName        # also exported as PFTQ_TASK_HANDLER_INPUT_WORKER_NAME
+//	       workerUID         # also exported as PFTQ_TASK_HANDLER_INPUT_WORKER_UID
+//	       workerConfig.json # also exported as PFTQ_TASK_HANDLER_INPUT_WORKER_CONFIG_JSON
+//	   output/
 func (w *Worker) prepareTaskHandlerDirAndEnvvars(t *task.Task) (string, []string, error) {
 	inputOutputDirPermission := os.FileMode(0750)
 	inputFilePermission := os.FileMode(0440)
@@ -501,11 +501,12 @@ func (w *Worker) prepareTaskHandlerDirAndEnvvars(t *task.Task) (string, []string
 	return workspacePath, envvars, nil
 }
 
-//  {task workspace path}/
-//    output/
-//      message
-//      payload
-//      postHooks.json
+// {task workspace path}/
+//
+//	output/
+//	  message
+//	  payload
+//	  postHooks.json
 func (w *Worker) fetchResultContents(logger zerolog.Logger, t *task.Task) (*string, *string, []task.TaskSpec, error) {
 	workspaceDir := w.workspacePath(t)
 	postHooksPath := filepath.Join(workspaceDir, "output", "postHooks.json")
