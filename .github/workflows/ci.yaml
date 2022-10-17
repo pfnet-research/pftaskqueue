@@ -11,57 +11,57 @@ on:
 
 jobs:
 
-  test:
-    name: Test
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
     steps:
+    - name: Check out
+      uses: actions/checkout@v3
     - name: Set up Go 1.x
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v3
       with:
-        go-version: ^1.16
+        go-version: ~1.16
       id: go
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
     - name: Get dependencies
       run: go mod download
     - name: Get Devtools
       run: make setup
     - name: Lint
       run : make lint
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out
+      uses: actions/checkout@v3
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v3
+      with:
+        go-version: ~1.16
+      id: go
+    - name: Get dependencies
+      run: go mod download
+    - name: Get Devtools
+      run: make setup
     - name: Build
-      run: make
+      run: make build-only
     - name: Test
       run: make test
-    - name: Validate .goreleaser.yml
-      uses: goreleaser/goreleaser-action@v2
+
+  validate-goreleaser:
+    name: Validate .goreleaser.yml
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out
+      uses: actions/checkout@v3
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v3
+      with:
+        go-version: ~1.16
+      id: go
+    - name: Validate GoReleaser
+      uses: goreleaser/goreleaser-action@v3
       with:
         version: latest
         args: release --snapshot --skip-publish --rm-dist --debug
-
-  image_build:
-    name: Image Build
-    runs-on: ubuntu-latest
-    env:
-      DOCKER_BUILDKIT: 1
-      IMAGE_PREFIX: docker.pkg.github.com/${{ github.repository }}/
-    steps:
-      - name: Set up Go 1.x
-        uses: actions/setup-go@v2
-        with:
-          go-version: ^1.16
-        id: go
-      - name: Check out
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Get Devtools
-        run: make setup
-      - name: Login GitHub Registry
-        run: docker login docker.pkg.github.com -u owner -p ${{ secrets.GITHUB_TOKEN }}
-      - name: Build Docker image
-        run: make build-image
-      - name: Push Docker image
-        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
-        run: make push-image

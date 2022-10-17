@@ -94,10 +94,10 @@ Just download a tar ball for your platform from [releases](./../../releases) pag
 
 `pftaskqueue` publishes two kind of docker iamges in [GitHub Packages](https://github.com/pfnet-research/pftaskqueue/packages)
 
-- `docker.pkg.github.com/pfnet-research/pftaskqueue/dev:latest`: built on the latest master branch
-  - `docker.pkg.github.com/pfnet-research/pftaskqueue/dev:vx.y.z-alppha.n` is also available for old dev images
-- `docker.pkg.github.com/pfnet-research/pftaskqueue/release:latest`: the latest release image
-  -  `docker.pkg.github.com/pfnet-research/pftaskqueue/release:vx.y.z` is also available for previous/specific release images
+- `ghcr.io/pfnet-research/pftaskqueue/dev:latest`: built on the latest master branch
+  - `ghcr.io/pfnet-research/pftaskqueue/dev:vx.y.z-alpha-{{revision}}` is also available for old dev images
+- `ghcr.io/pfnet-research/pftaskqueue/release:latest`: the latest release image
+  -  `ghcr.io/pfnet-research/pftaskqueue/release:vx.y.z` is also available for previous/specific release images
 
 To pull those images, you would need `docker login docker.pkg.github.com` first.  Please see [Configuring Docker for use with GitHub Packages](https://help.github.com/en/packages/using-github-packages-with-your-projects-ecosystem/configuring-docker-for-use-with-github-packages) if you are not familiar wit it.
 
@@ -825,12 +825,7 @@ make test
 
 ### How to make release
 
-`release` target tags a commit and push the tag to `origin`.  Release process will run in GitHub Action.
-
-```bash
-$ RELEASE_TAG=$(git semv patch) # next patch version.  bump major/minor version if necessary
-$ make release RELEASE=true RELEASE_TAG=${RELEASE_TAG}
-```
+The release process is fully automated by [tagpr](https://github.com/Songmu/tagpr). To release, just merge [the latest release PR](https://github.com/pfnet-research/pftaskqueue/pulls?q=is:pr+is:open+label:tagpr).
 
 ## License
 
