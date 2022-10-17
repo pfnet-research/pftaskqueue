@@ -825,12 +825,7 @@ make test
 
 ### How to make release
 
-`release` target tags a commit and push the tag to `origin`.  Release process will run in GitHub Action.
-
-```bash
-$ RELEASE_TAG=$(git semv patch) # next patch version.  bump major/minor version if necessary
-$ make release RELEASE=true RELEASE_TAG=${RELEASE_TAG}
-```
+The release process is fully automated by [tagpr](https://github.com/Songmu/tagpr). To release, just merge [the latest release PR](https://github.com/pfnet-research/pftaskqueue/pulls?q=is:pr+is:open+label:tagpr).
 
 ## License
 

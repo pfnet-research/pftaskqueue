@@ -49,17 +49,3 @@ test:
 .PHONY: clean
 clean:
 	rm -rf "$(OUTDIR)"
-
-#
-# Release
-#
-guard-%:
-	@ if [ "${${*}}" = "" ]; then \
-    echo "Environment variable $* is not set"; \
-		exit 1; \
-	fi
-.PHONY: release
-release: guard-RELEASE guard-RELEASE_TAG
-	git diff --quiet HEAD || (echo "your current branch is dirty" && exit 1)
-	git tag $(RELEASE_TAG) $(REVISION)
-	git push origin $(RELEASE_TAG)
