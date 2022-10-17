@@ -55,6 +55,8 @@ jobs:
     steps:
     - name: Check out
       uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
     - name: Set up Go 1.x
       uses: actions/setup-go@v3
       with:
@@ -63,5 +65,4 @@ jobs:
     - name: Validate GoReleaser
       uses: goreleaser/goreleaser-action@v3
       with:
-        version: latest
         args: release --snapshot --skip-publish --rm-dist --debug

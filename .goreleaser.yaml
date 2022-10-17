@@ -24,7 +24,7 @@ builds:
   - -s -w -X github.com/pfnet-research/pftaskqueue/cmd.Version={{.Version}} -X github.com/pfnet-research/pftaskqueue/cmd.Revision={{.ShortCommit}} -extldflags "-static"
 
 dockers:
-- image_templates: ["ghcr.io/pfnet-research/{{ .ProjectName }}/{{ if .IsSnapshot }}dev:{{ incpatch .Version }}-alpha-{{ .ShortCommit }}{{else}}release:{{ .Version }}{{end}}-amd64"]
+- image_templates: ["ghcr.io/pfnet-research/{{ .ProjectName }}/{{ if .IsSnapshot }}dev:v{{ incpatch .Version }}-alpha-{{ .ShortCommit }}{{else}}release:v{{ .Version }}{{end}}-amd64"]
   dockerfile: Dockerfile
   goarch: amd64
   use: buildx
@@ -37,7 +37,7 @@ dockers:
   - --label=org.opencontainers.image.version={{ .Version }}
   - --label=org.opencontainers.image.revision={{ .ShortCommit }}
   - --label=org.opencontainers.image.licenses=Apache-2.0
-- image_templates: ["ghcr.io/pfnet-research/{{ .ProjectName }}/{{ if .IsSnapshot }}dev:{{ incpatch .Version }}-alpha-{{ .ShortCommit }}{{else}}release:{{ .Version }}{{end}}-arm64v8"]
+- image_templates: ["ghcr.io/pfnet-research/{{ .ProjectName }}/{{ if .IsSnapshot }}dev:v{{ incpatch .Version }}-alpha-{{ .ShortCommit }}{{else}}release:v{{ .Version }}{{end}}-arm64v8"]
   dockerfile: Dockerfile
   goarch: arm64
   use: buildx
@@ -52,14 +52,14 @@ dockers:
   - --label=org.opencontainers.image.licenses=Apache-2.0
 
 docker_manifests:
-- name_template: ghcr.io/pfnet-research/{{ .ProjectName }}/{{ if .IsSnapshot }}dev:{{ incpatch .Version }}-alpha-{{ .ShortCommit }}{{else}}release:{{ .Version }}{{end}}
+- name_template: ghcr.io/pfnet-research/{{ .ProjectName }}/{{ if .IsSnapshot }}dev:v{{ incpatch .Version }}-alpha-{{ .ShortCommit }}{{else}}release:v{{ .Version }}{{end}}
   image_templates:
-  - ghcr.io/pfnet-research/{{ .ProjectName }}/{{ if .IsSnapshot }}dev:{{ incpatch .Version }}-alpha-{{ .ShortCommit }}{{else}}release:{{ .Version }}{{end}}-amd64
-  - ghcr.io/pfnet-research/{{ .ProjectName }}/{{ if .IsSnapshot }}dev:{{ incpatch .Version }}-alpha-{{ .ShortCommit }}{{else}}release:{{ .Version }}{{end}}-arm64v8
+  - ghcr.io/pfnet-research/{{ .ProjectName }}/{{ if .IsSnapshot }}dev:v{{ incpatch .Version }}-alpha-{{ .ShortCommit }}{{else}}release:v{{ .Version }}{{end}}-amd64
+  - ghcr.io/pfnet-research/{{ .ProjectName }}/{{ if .IsSnapshot }}dev:v{{ incpatch .Version }}-alpha-{{ .ShortCommit }}{{else}}release:v{{ .Version }}{{end}}-arm64v8
 - name_template: ghcr.io/pfnet-research/{{ .ProjectName }}/{{ if .IsSnapshot }}dev{{else}}release{{end}}:latest
   image_templates:
-  - ghcr.io/pfnet-research/{{ .ProjectName }}/{{ if .IsSnapshot }}dev:{{ incpatch .Version }}-alpha-{{ .ShortCommit }}{{else}}release:{{ .Version }}{{end}}-amd64
-  - ghcr.io/pfnet-research/{{ .ProjectName }}/{{ if .IsSnapshot }}dev:{{ incpatch .Version }}-alpha-{{ .ShortCommit }}{{else}}release:{{ .Version }}{{end}}-arm64v8
+  - ghcr.io/pfnet-research/{{ .ProjectName }}/{{ if .IsSnapshot }}dev:v{{ incpatch .Version }}-alpha-{{ .ShortCommit }}{{else}}release:v{{ .Version }}{{end}}-amd64
+  - ghcr.io/pfnet-research/{{ .ProjectName }}/{{ if .IsSnapshot }}dev:v{{ incpatch .Version }}-alpha-{{ .ShortCommit }}{{else}}release:v{{ .Version }}{{end}}-arm64v8
 
 snapshot:
   name_template: '{{ incpatch .Version }}-alpha-{{ .ShortCommit }}'
