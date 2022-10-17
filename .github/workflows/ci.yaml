@@ -11,57 +11,97 @@ on:
 
 jobs:
 
-  test:
-    name: Test
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
     steps:
+    - name: Check out
+      uses: actions/checkout@v3
     - name: Set up Go 1.x
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v3
       with:
-        go-version: ^1.16
+        go-version: ~1.16
       id: go
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
     - name: Get dependencies
       run: go mod download
     - name: Get Devtools
       run: make setup
     - name: Lint
       run : make lint
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out
+      uses: actions/checkout@v3
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v3
+      with:
+        go-version: ~1.16
+      id: go
+    - name: Get dependencies
+      run: go mod download
+    - name: Get Devtools
+      run: make setup
     - name: Build
-      run: make
+      run: make build-only
     - name: Test
       run: make test
-    - name: Validate .goreleaser.yml
-      uses: goreleaser/goreleaser-action@v2
+
+  validate-goreleaser:
+    name: Validate .goreleaser.yml
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out
+      uses: actions/checkout@v3
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v3
+      with:
+        go-version: ~1.16
+      id: go
+    - name: Validate GoReleaser
+      uses: goreleaser/goreleaser-action@v3
       with:
         version: latest
         args: release --snapshot --skip-publish --rm-dist --debug
 
-  image_build:
-    name: Image Build
+  publish_dev_image:
+    name: Publish Dev Image
     runs-on: ubuntu-latest
-    env:
-      DOCKER_BUILDKIT: 1
-      IMAGE_PREFIX: docker.pkg.github.com/${{ github.repository }}/
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
     steps:
-      - name: Set up Go 1.x
-        uses: actions/setup-go@v2
-        with:
-          go-version: ^1.16
-        id: go
       - name: Check out
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v3
         with:
-          fetch-depth: 0
-      - name: Get Devtools
-        run: make setup
-      - name: Login GitHub Registry
-        run: docker login docker.pkg.github.com -u owner -p ${{ secrets.GITHUB_TOKEN }}
-      - name: Build Docker image
-        run: make build-image
-      - name: Push Docker image
-        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
-        run: make push-image
+          go-version: ~1.16
+        id: go
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: pfnet-research
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build Snapshots
+        uses: goreleaser/goreleaser-action@v3
+        with:
+          version: latest
+          args: release --snapshot --rm-dist --debug
+        # Mimic docker, docker_manifests artifacts in goreleaser here.
+        # because "goreleaser release --snapshot" does NOT publish any artifact
+      - name: Publish Snapshot Images
+        shell: bash
+        run: |
+          set -euo pipefail
+          IMAGES=($(jq -r '.[] | select(.type=="Docker Image") | .name' dist/artifacts.json))
+          for i in ${IMAGES[@]}; do
+            docker push $i
+          done
+          MANIFEST=$(jq '.[] | select(.type=="Docker Image") | .name' dist/artifacts.json | jq -sr '.[0]' | sed -e "s|-[a-z0-9]\+$||g")
+          docker manifest create ${MANIFEST} ${IMAGES[@]}
+          docker manifest push ${MANIFEST}
+          MANIFEST_LATEST=$(jq '.[] | select(.type=="Docker Image") | .name' dist/artifacts.json | jq -sr '.[0]' | sed -e "s|:.*$||g"):latest
+          docker manifest create ${MANIFEST_LATEST} ${IMAGES[@]}
+          docker manifest push ${MANIFEST_LATEST}
