@@ -57,7 +57,7 @@ func (b *Backend) ensureQueueAndWorkerExists(queueUID, workerUID uuid.UUID) (*ta
 	return queue, worker, nil
 }
 
-func (b *Backend) AddTask(ctx context.Context, queueName string, spec task.TaskSpec) (*task.Task, error) {
+func (b *Backend) AddTasks(ctx context.Context, queueName string, specs []task.TaskSpec) ([]*task.Task, error) {
 	if err := taskqueue.ValidateQueueName(queueName); err != nil {
 		return nil, err
 	}
@@ -65,37 +65,44 @@ func (b *Backend) AddTask(ctx context.Context, queueName string, spec task.TaskS
 	if err != nil {
 		return nil, err
 	}
-	if err := b.validateTaskSpec(spec); err != nil {
-		return nil, err
+
+	var newTasks []*task.Task
+	var newTasksUIDs []interface{}
+	var msetValues []interface{}
+	for _, spec := range specs {
+		if err := b.validateTaskSpec(spec); err != nil {
+			return nil, err
+		}
+		newTask := task.NewTask(spec, nil)
+		marshaled, err := json.Marshal(newTask)
+		if err != nil {
+			return nil, errors.Wrap(err, "can't marshal")
+		}
+		newTasks = append(newTasks, newTask)
+		newTasksUIDs = append(newTasksUIDs, newTask.UID)
+		msetValues = append(msetValues, b.taskKey(queue.UID.String(), newTask.UID), string(marshaled))
 	}
 
-	newTask := task.NewTask(spec, nil)
-	marshaled, err := json.Marshal(newTask)
-	if err != nil {
-		return nil, errors.Wrap(err, "can't marshal")
-	}
-
-	// WATCH {tasks_key} {task_key}
+	// WATCH {tasks_key}
 	// MULTI
-	// SADD {tasks_key} {taskUID}
-	// LPUSH {pending_queue_key} {taskUID}
-	// SET {task_key} {task}
+	// SADD {tasks_key} {taskUID} ...
+	// LPUSH {pending_queue_key} {taskUID} ...
+	// MSET {task_key} {task} ...
 	// EXEC
 	watchingKeys := []string{
 		b.tasksKey(queue.UID.String()),
-		b.taskKey(queue.UID.String(), newTask.UID),
 	}
 	logger := b.Logger.With().
 		Str("queue", queueName).
 		Str("queueUID", queue.UID.String()).
-		Str("taskUID", newTask.UID).
-		Str("operation", "AddTask").
+		Str("operation", "AddTasks").
 		Logger()
+
 	txf := func(tx *redis.Tx) error {
 		_, err = tx.TxPipelined(func(pipe redis.Pipeliner) error {
-			pipe.SAdd(b.tasksKey(queue.UID.String()), newTask.UID)
-			pipe.LPush(b.pendingTaskQueueKey(queue.UID.String()), newTask.UID)
-			pipe.Set(b.taskKey(queue.UID.String(), newTask.UID), string(marshaled), -1)
+			pipe.SAdd(b.tasksKey(queue.UID.String()), newTasksUIDs...)
+			pipe.LPush(b.pendingTaskQueueKey(queue.UID.String()), newTasksUIDs...)
+			pipe.MSet(msetValues...)
 			return nil
 		})
 		return err
@@ -104,7 +111,7 @@ func (b *Backend) AddTask(ctx context.Context, queueName string, spec task.TaskS
 	if err != nil {
 		return nil, err
 	}
-	return newTask, nil
+	return newTasks, nil
 }
 
 func (b *Backend) getTasksByUIDs(queueUID string, taskUIDs []string, filter func(*task.Task) bool, lggr zerolog.Logger) ([]*task.Task, error) {

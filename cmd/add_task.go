@@ -132,6 +132,8 @@ func addTaskFromFile(queue *taskqueue.TaskQueue, dirName string, fileinfo os.Fil
 func addTaskFromReader(lggr zerolog.Logger, queue *taskqueue.TaskQueue, reader io.Reader) {
 	decoder := yaml.NewDecoder(reader)
 	decoder.SetStrict(true)
+
+	var taskSpecs []task.TaskSpec
 LOOP:
 	for {
 		var taskSpec task.TaskSpec
@@ -142,20 +144,22 @@ LOOP:
 		case err != nil:
 			lggr.Error().Err(err).Msg("Failed to unmarshal task spec. Skipped")
 		default:
-			task, err := queueBackend.AddTask(cmdContext, queue.Spec.Name, taskSpec)
-			if err != nil {
-				lggr.Error().Err(err).
-					Str("queueName", queue.Spec.Name).
-					Str("queueUID", queue.UID.String()).
-					Interface("taskSpec", &taskSpec).
-					Msg("Failed to add task to queue. Skipped")
-			} else {
-				lggr.Info().
-					Str("queueName", queue.Spec.Name).
-					Str("queueUID", queue.UID.String()).
-					Interface("task", task).
-					Msg("Task added to queue")
-			}
+			taskSpecs = append(taskSpecs, taskSpec)
 		}
+	}
+
+	task, err := queueBackend.AddTasks(cmdContext, queue.Spec.Name, taskSpecs)
+	if err != nil {
+		lggr.Error().Err(err).
+			Str("queueName", queue.Spec.Name).
+			Str("queueUID", queue.UID.String()).
+			Interface("taskSpecs", &taskSpecs).
+			Msg("Failed to add task to queue. Skipped")
+	} else {
+		lggr.Info().
+			Str("queueName", queue.Spec.Name).
+			Str("queueUID", queue.UID.String()).
+			Interface("task", task).
+			Msg("Task added to queue")
 	}
 }

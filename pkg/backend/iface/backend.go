@@ -58,7 +58,7 @@ type Backend interface {
 	SetWorkerFailed(ctx context.Context, queueUID, workerUID uuid.UUID) (*worker.Worker, error)
 	SalvageWorker(ctx context.Context, queueUID, salvagingWorkerUID, salvageTargetWorkerUID uuid.UUID) (*worker.Worker, []*task.Task, error)
 
-	AddTask(ctx context.Context, queueName string, spec task.TaskSpec) (*task.Task, error)
+	AddTasks(ctx context.Context, queueName string, specs []task.TaskSpec) ([]*task.Task, error)
 	NextTask(ctx context.Context, queueUID, workerUID uuid.UUID) (*task.Task, error)
 	GetAllTasks(ctx context.Context, queueName string) ([]*task.Task, error)
 	GetProcessingTasks(ctx context.Context, queueName string) ([]*task.Task, error)
