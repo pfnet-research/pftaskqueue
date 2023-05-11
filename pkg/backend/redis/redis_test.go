@@ -88,6 +88,11 @@ var (
 		RetryLimit:     1,
 		TimeoutSeconds: 60,
 	}
+	SampleTaskSpec2 = task.TaskSpec{
+		Payload:        "payload2",
+		RetryLimit:     1,
+		TimeoutSeconds: 60,
+	}
 	SampleInvalidTaskSpec = task.TaskSpec{
 		Name:           strings.Repeat("a", MaxNameLength+1),
 		Payload:        strings.Repeat("x", PayloadMaxSizeInKB*KB+1),
@@ -628,11 +633,11 @@ var _ = Describe("Backend", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					// push 3 tasks
-					_, err = backend.AddTask(context.Background(), queue.Spec.Name, SampleTaskSpec)
-					Expect(err).NotTo(HaveOccurred())
-					_, err = backend.AddTask(context.Background(), queue.Spec.Name, SampleTaskSpec)
-					Expect(err).NotTo(HaveOccurred())
-					_, err = backend.AddTask(context.Background(), queue.Spec.Name, SampleTaskSpec)
+					_, err = backend.AddTasks(context.Background(), queue.Spec.Name, []task.TaskSpec{
+						SampleTaskSpec,
+						SampleTaskSpec,
+						SampleTaskSpec,
+					})
 					Expect(err).NotTo(HaveOccurred())
 
 					// fetch 3 tasks by target ( 1 received(=r), 1 processing(=p), 1 succeeded(=s))
@@ -697,10 +702,10 @@ var _ = Describe("Backend", func() {
 	})
 
 	Context("Task Operation", func() {
-		Context("AddTask", func() {
+		Context("AddTasks", func() {
 			When("queue doesn't exist", func() {
 				It("should raise TaskQueueNotFound error", func() {
-					_, err := backend.AddTask(context.Background(), QueueName, SampleTaskSpec)
+					_, err := backend.AddTasks(context.Background(), QueueName, []task.TaskSpec{SampleTaskSpec})
 					Expect(err).To(Equal(iface.TaskQueueNotFound))
 				})
 			})
@@ -708,7 +713,7 @@ var _ = Describe("Backend", func() {
 				When("Spec is invalid", func() {
 					It("should fail immediately", func() {
 						_ = testutil.MustCreateQueue(backend, SampleQueueSpec)
-						_, err := backend.AddTask(context.Background(), QueueName, SampleInvalidTaskSpec)
+						_, err := backend.AddTasks(context.Background(), QueueName, []task.TaskSpec{SampleInvalidTaskSpec})
 						Expect(err).To(HaveOccurred())
 						vErr, ok := err.(*util.ValidationError)
 						Expect(ok).To(Equal(true))
@@ -720,17 +725,28 @@ var _ = Describe("Backend", func() {
 				When("Spec is valid", func() {
 					It("can create a Task", func() {
 						queue := testutil.MustCreateQueue(backend, SampleQueueSpec)
-						t, err := backend.AddTask(context.Background(), QueueName, SampleTaskSpec)
+						tasks, err := backend.AddTasks(context.Background(), QueueName, []task.TaskSpec{SampleTaskSpec, SampleTaskSpec2})
 						Expect(err).NotTo(HaveOccurred())
-						Expect(t.UID).NotTo(Equal(""))
-						Expect(t.ParentUID).To(BeNil())
-						Expect(t.Status.Phase).To(Equal(task.TaskPhasePending))
+						Expect(tasks[0].UID).NotTo(Equal(""))
+						Expect(tasks[0].Spec.Payload).To(Equal(SampleTaskSpec.Payload))
+						Expect(tasks[0].ParentUID).To(BeNil())
+						Expect(tasks[0].Status.Phase).To(Equal(task.TaskPhasePending))
 
-						pending := mustPendingQueueLength(queue.UID.String(), 1)
-						Expect(pending[0]).To(Equal(t.UID))
-						tasks := mustTasksSetSize(queue.UID.String(), 1)
-						Expect(tasks[0]).To(Equal(t.UID))
-						assertKeyContents(backend.taskKey(queue.UID.String(), t.UID), t)
+						Expect(tasks[1].UID).NotTo(Equal(""))
+						Expect(tasks[1].Spec.Payload).To(Equal(SampleTaskSpec2.Payload))
+						Expect(tasks[1].ParentUID).To(BeNil())
+						Expect(tasks[1].Status.Phase).To(Equal(task.TaskPhasePending))
+
+						Expect(tasks[0].UID).NotTo(Equal(tasks[1].UID))
+
+						pending := mustPendingQueueLength(queue.UID.String(), 2)
+						Expect(pending[0]).To(Equal(tasks[1].UID))
+						Expect(pending[1]).To(Equal(tasks[0].UID))
+						taskUIDs := mustTasksSetSize(queue.UID.String(), 2)
+						Expect(taskUIDs[0]).To(Equal(tasks[1].UID))
+						Expect(taskUIDs[1]).To(Equal(tasks[0].UID))
+						assertKeyContents(backend.taskKey(queue.UID.String(), tasks[0].UID), tasks[0])
+						assertKeyContents(backend.taskKey(queue.UID.String(), tasks[1].UID), tasks[1])
 					})
 				})
 			})
@@ -752,9 +768,9 @@ var _ = Describe("Backend", func() {
 					Expect(t).To(BeNil())
 
 					// add task to the queue
-					t, err = backend.AddTask(context.Background(), QueueName, SampleTaskSpec)
+					tasks, err := backend.AddTasks(context.Background(), QueueName, []task.TaskSpec{SampleTaskSpec})
 					Expect(err).NotTo(HaveOccurred())
-					Expect(t).NotTo(BeNil())
+					Expect(tasks).To(HaveLen(1))
 					_ = mustPendingQueueLength(queue.UID.String(), 1)
 
 					// try to pop from pending queue with 1 task
@@ -780,16 +796,16 @@ var _ = Describe("Backend", func() {
 					It("should pop pending the task and move it pending key atomically", func() {
 						queue, worker := testutil.MustCreateQueueAndRegisterWorker(backend, SampleQueueSpec, SampleWorkerSpec)
 
-						t, err := backend.AddTask(context.Background(), QueueName, SampleTaskSpec)
+						tasks, err := backend.AddTasks(context.Background(), QueueName, []task.TaskSpec{SampleTaskSpec})
 						Expect(err).NotTo(HaveOccurred())
-						Expect(t).NotTo(BeNil())
+						Expect(tasks).To(HaveLen(1))
 						_ = mustPendingQueueLength(queue.UID.String(), 1)
 
 						now := time.Now()
 						popped, err := backend.NextTask(context.Background(), queue.UID, worker.UID)
 
 						Expect(err).NotTo(HaveOccurred())
-						Expect(popped.UID).To(Equal(t.UID))
+						Expect(popped.UID).To(Equal(tasks[0].UID))
 						Expect(popped.Spec).To(Equal(SampleTaskSpec))
 						Expect(popped.Status.Phase).To(Equal(task.TaskPhaseReceived))
 						Expect(popped.Status.CurrentRecord.WorkerName).To(Equal(worker.Spec.Name))
@@ -807,7 +823,7 @@ var _ = Describe("Backend", func() {
 						mustTasksSetSize(queue.UID.String(), 1)
 						mustWorkerPendingQueueLength(queue.UID.String(), worker.UID.String(), 0)
 						mustWorkerTasksSetSize(queue.UID.String(), worker.UID.String(), 1)
-						assertKeyContents(backend.taskKey(queue.UID.String(), t.UID), popped)
+						assertKeyContents(backend.taskKey(queue.UID.String(), tasks[0].UID), popped)
 					})
 				})
 			})
@@ -817,7 +833,7 @@ var _ = Describe("Backend", func() {
 			It("should update phase and currentRecord", func() {
 				// setup: add --> pop --> set processing
 				queue, worker := testutil.MustCreateQueueAndRegisterWorker(backend, SampleQueueSpec, SampleWorkerSpec)
-				t, err := backend.AddTask(context.Background(), QueueName, SampleTaskSpec)
+				tasks, err := backend.AddTasks(context.Background(), QueueName, []task.TaskSpec{SampleTaskSpec})
 				Expect(err).NotTo(HaveOccurred())
 				now := time.Now()
 				s, err := backend.NextTask(context.Background(), queue.UID, worker.UID)
@@ -826,7 +842,7 @@ var _ = Describe("Backend", func() {
 				err = backend.SetProcessing(context.Background(), queue.UID, worker.UID, s)
 
 				Expect(err).NotTo(HaveOccurred())
-				Expect(s.UID).To(Equal(t.UID))
+				Expect(s.UID).To(Equal(tasks[0].UID))
 				Expect(s.Spec).To(Equal(SampleTaskSpec))
 				Expect(s.Status.Phase).To(Equal(task.TaskPhaseProcessing))
 				Expect(s.Status.CurrentRecord.WorkerName).To(Equal(worker.Spec.Name))
@@ -854,7 +870,7 @@ var _ = Describe("Backend", func() {
 			It("should delete processing, set completed and push onsuccess atomically", func() {
 				// setup: add --> pop --> set processing --> set succeded
 				queue, worker := testutil.MustCreateQueueAndRegisterWorker(backend, SampleQueueSpec, SampleWorkerSpec)
-				_, err := backend.AddTask(context.Background(), QueueName, SampleTaskSpec)
+				_, err := backend.AddTasks(context.Background(), QueueName, []task.TaskSpec{SampleTaskSpec})
 				Expect(err).NotTo(HaveOccurred())
 				now := time.Now()
 				t, err := backend.NextTask(context.Background(), queue.UID, worker.UID)
@@ -910,7 +926,7 @@ var _ = Describe("Backend", func() {
 				It("should requeue the task and hooks to pending", func() {
 					// setup: add --> pop --> set processing --> set record
 					queue, worker := testutil.MustCreateQueueAndRegisterWorker(backend, SampleQueueSpec, SampleWorkerSpec)
-					_, err := backend.AddTask(context.Background(), QueueName, SampleTaskSpec)
+					_, err := backend.AddTasks(context.Background(), QueueName, []task.TaskSpec{SampleTaskSpec})
 					Expect(err).NotTo(HaveOccurred())
 					now := time.Now()
 					t, err := backend.NextTask(context.Background(), queue.UID, worker.UID)
@@ -965,7 +981,7 @@ var _ = Describe("Backend", func() {
 					It("completes the task as failure and requeue hooks to pending", func() {
 						// setup: add --> (pop --> set processing --> set recordFailure) x 2
 						queue, worker := testutil.MustCreateQueueAndRegisterWorker(backend, SampleQueueSpec, SampleWorkerSpec)
-						_, err := backend.AddTask(context.Background(), QueueName, SampleTaskSpec)
+						_, err := backend.AddTasks(context.Background(), QueueName, []task.TaskSpec{SampleTaskSpec})
 						Expect(err).NotTo(HaveOccurred())
 
 						now := time.Now()

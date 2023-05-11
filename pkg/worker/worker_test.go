@@ -161,7 +161,7 @@ var _ = Describe("Worker", func() {
 			numTasks := 50
 			for i := 0; i < numTasks; i++ {
 				spec := mkSampleSpec(i)
-				_, err := bcknd.AddTask(context.Background(), QueueName, spec)
+				_, err := bcknd.AddTasks(context.Background(), QueueName, []task.TaskSpec{spec})
 				Expect(err).NotTo(HaveOccurred())
 			}
 
