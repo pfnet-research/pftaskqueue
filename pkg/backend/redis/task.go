@@ -66,9 +66,9 @@ func (b *Backend) AddTasks(ctx context.Context, queueName string, specs []task.T
 		return nil, err
 	}
 
-	var newTasks []*task.Task
-	var newTasksUIDs []interface{}
-	var msetValues []interface{}
+	newTasks := make([]*task.Task, 0, len(specs))
+	newTasksUIDs := make([]interface{}, 0, len(specs))
+	msetValues := make([]interface{}, 0, len(specs)*2)
 	for _, spec := range specs {
 		if err := b.validateTaskSpec(spec); err != nil {
 			return nil, err
