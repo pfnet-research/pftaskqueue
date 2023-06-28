@@ -297,10 +297,12 @@ func mustInitializeQueueBackend() {
 		queueBackend, err = backendfactory.NewBackend(logger, backendconfig.Config{
 			BackendType: cmdOpts.Backend,
 			Redis: &backendconfig.RedisConfig{
-				KeyPrefix:      cmdOpts.Redis.KeyPrefix,
-				Client:         cmdOpts.Redis.NewClient(),
-				Backoff:        cmdOpts.Redis.Backoff,
-				ChunkSizeInGet: cmdOpts.Redis.ChunkSizeInGet,
+				KeyPrefix:          cmdOpts.Redis.KeyPrefix,
+				Client:             cmdOpts.Redis.NewClient(),
+				Backoff:            cmdOpts.Redis.Backoff,
+				ChunkSizeInGet:     cmdOpts.Redis.ChunkSizeInGet,
+				ChunkSizeInDelete:  cmdOpts.Redis.ChunkSizeInDelete,
+				WithoutTransaction: cmdOpts.Redis.WithoutTransaction,
 			},
 		})
 

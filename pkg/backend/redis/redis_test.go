@@ -112,10 +112,11 @@ var _ = Describe("Backend", func() {
 		ibackend, err := NewBackend(logger, backendconfig.Config{
 			BackendType: "redis",
 			Redis: &backendconfig.RedisConfig{
-				KeyPrefix:      "test",
-				Client:         client,
-				Backoff:        backoffConfig,
-				ChunkSizeInGet: 1000,
+				KeyPrefix:         "test",
+				Client:            client,
+				Backoff:           backoffConfig,
+				ChunkSizeInGet:    1000,
+				ChunkSizeInDelete: 1000,
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())
@@ -280,6 +281,20 @@ var _ = Describe("Backend", func() {
 				It("should raise TaskQueueNotFoundError", func() {
 					err := backend.DeleteQueue(context.Background(), SampleQueueSpec.Name)
 					Expect(err).To(Equal(iface.TaskQueueNotFound))
+				})
+			})
+			When("the large queue exists", func() {
+				It("can delete the queue", func() {
+					testutil.MustCreateQueue(backend, SampleQueueSpec)
+					// numOfTasks % chunkSize != 0 && numOfTasks > chunkSize
+					numOfTasks := 1000 // numOfTasks < ChunkSizeInDelete
+					for i := 0; i < numOfTasks; i++ {
+						_, err := backend.AddTask(context.Background(), QueueName, SampleTaskSpec)
+						Expect(err).NotTo(HaveOccurred())
+					}
+
+					err := backend.DeleteQueue(context.Background(), SampleQueueSpec.Name)
+					Expect(err).To(Equal(iface.TaskQueueIsTooLarge))
 				})
 			})
 		})
@@ -1043,6 +1058,64 @@ var _ = Describe("Backend", func() {
 						// deadletter has 1 element
 						mustDeadletterLength(queue.UID.String(), 1)
 					})
+				})
+			})
+		})
+	})
+})
+
+var _ = Describe("BackendWihoutTransaction", func() {
+	var backend *Backend
+	BeforeEach(func() {
+		var err error
+		backoffConfig := backendconfig.DefaultBackoffConfig()
+		backoffConfig.MaxRetry = 0
+		ibackend, err := NewBackend(logger, backendconfig.Config{
+			BackendType: "redis",
+			Redis: &backendconfig.RedisConfig{
+				KeyPrefix:          "test",
+				Client:             client,
+				Backoff:            backoffConfig,
+				ChunkSizeInGet:     1000,
+				ChunkSizeInDelete:  1000,
+				WithoutTransaction: true,
+			},
+		})
+		Expect(err).NotTo(HaveOccurred())
+		backend, _ = ibackend.(*Backend)
+	})
+
+	AfterEach(func() {
+		keys, err := client.Keys("*").Result()
+		Expect(err).NotTo(HaveOccurred())
+		if len(keys) > 0 {
+			num, err := client.Del(keys...).Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(num).To(Equal(int64(len(keys))))
+		}
+	})
+
+	Context("Queue Operation", func() {
+		Context("DeleteQueue", func() {
+			When("the large queue exists", func() {
+				It("can delete the queue", func() {
+					queue := testutil.MustCreateQueue(backend, SampleQueueSpec)
+					// numOfTasks % chunkSize != 0 && numOfTasks > chunkSize
+					// numOfTaksk <= chunSize
+					numOfTasks := 1000
+					for i := 0; i < numOfTasks; i++ {
+						_, err := backend.AddTask(context.Background(), QueueName, SampleTaskSpec)
+						Expect(err).NotTo(HaveOccurred())
+					}
+
+					Expect(backend.DeleteQueue(context.Background(), SampleQueueSpec.Name)).NotTo(HaveOccurred())
+
+					queuesHash, err := client.HGetAll(backend.allQueuesKey()).Result()
+					Expect(err).NotTo(HaveOccurred())
+					Expect(len(queuesHash)).To(Equal(0))
+					keys, err := client.Keys(backend.queueKey(queue.UID.String()) + "*").Result()
+					Expect(err).NotTo(HaveOccurred())
+					Expect(len(keys)).To(Equal(0))
 				})
 			})
 		})

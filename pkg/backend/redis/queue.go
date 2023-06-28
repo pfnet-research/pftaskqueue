@@ -204,7 +204,7 @@ func (b *Backend) UpdateQueue(ctx context.Context, queueSpec taskqueue.TaskQueue
 	return queue, nil
 }
 
-func (b *Backend) DeleteQueue(ctx context.Context, queueName string) error {
+func (b *Backend) deleteQueueWithTransaction(ctx context.Context, queueName string) error {
 	if err := taskqueue.ValidateQueueName(queueName); err != nil {
 		return err
 	}
@@ -212,6 +212,16 @@ func (b *Backend) DeleteQueue(ctx context.Context, queueName string) error {
 	if err != nil {
 		return err
 	}
+
+	numOfTasks, err := b.Client.SCard(b.tasksKey(queue.UID.String())).Result()
+	if err != nil {
+		return err
+	}
+
+	if int64(b.ChunkSizeInDelete) <= numOfTasks {
+		return iface.TaskQueueIsTooLarge
+	}
+
 	// WATCH {all_queues_key} {queue_key}
 	// .. worker_keys = collect worker keys
 	// WATCH worker_keys
@@ -252,11 +262,106 @@ func (b *Backend) DeleteQueue(ctx context.Context, queueName string) error {
 		b.Logger.With().
 			Str("queueName", queueName).
 			Str("queueUID", queue.UID.String()).
-			Str("operation", "DeleteQueue").
+			Str("operation", "DeleteQueueWithTransaction").
 			Logger(),
 		txf,
 		b.allQueuesKey(), b.queueKey(queue.UID.String()),
 	)
+}
+
+func (b *Backend) deleteQueueWithoutTransaction(ctx context.Context, queueName string) error {
+	if err := taskqueue.ValidateQueueName(queueName); err != nil {
+		return err
+	}
+	queue, err := b.ensureQueueExistsByName(b.Client, queueName)
+	if err != nil {
+		return err
+	}
+	//
+	// .. worker_keys = collect worker keys
+	// .. task_keys = collect task keys
+	// Use chunk to divide and loop until UNLINK all keys
+	// ---loop start---
+	// WATCH {all_queues_key} {queue_key}
+	// UNLINK chulk_keys
+	// ---loop end---
+	// WATCH {all_queues_key} {queue_key}
+	// MULTI
+	// DEL {queue_key} worker_keys task_keys
+	// HDEL {all_queues_key} {queueName}
+	// EXEC
+	keysToDelete := []string{}
+
+	workerKeysToDelete, err := b.allWorkersKeysForDeleteQueue(b.Client, queue.UID.String())
+	if err != nil {
+		return err
+	}
+	keysToDelete = append(keysToDelete, workerKeysToDelete...)
+
+	taskKeysToDelete, err := b.allTasksKeysForDeleteQueue(b.Client, queue.UID.String())
+	if err != nil {
+		return err
+	}
+	keysToDelete = append(keysToDelete, taskKeysToDelete...)
+
+	// chunk delete
+	for cursor := 0; cursor < len(keysToDelete); cursor += b.ChunkSizeInDelete {
+		time.Sleep(100 * time.Millisecond)
+		end := cursor + b.ChunkSizeInDelete
+		if len(keysToDelete) <= end {
+			end = len(keysToDelete)
+		}
+
+		deleteKeys := keysToDelete[cursor:end]
+		if len(deleteKeys) == 0 {
+			continue
+		}
+		err = b.runTxWithBackOff(
+			ctx,
+			b.Logger.With().
+				Str("queueName", queueName).
+				Str("queueUID", queue.UID.String()).
+				Str("operation", "DeleteQueueWithTransaction").
+				Logger(),
+			func(tx *redis.Tx) error {
+				_, err = tx.Unlink(deleteKeys...).Result()
+				return err
+			},
+			b.allQueuesKey(), b.queueKey(queue.UID.String()),
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	err = b.runTxWithBackOff(
+		ctx,
+		b.Logger.With().
+			Str("queueName", queueName).
+			Str("queueUID", queue.UID.String()).
+			Str("operation", "DeleteQueueWithTransaction").
+			Logger(),
+		func(tx *redis.Tx) error {
+			_, err = tx.Unlink(b.queueKey(queue.UID.String())).Result()
+			if err != nil {
+				return err
+			}
+
+			_, err = tx.HDel(b.allQueuesKey(), queue.Spec.Name).Result()
+			return err
+		},
+		b.allQueuesKey(), b.queueKey(queue.UID.String()),
+	)
+
+	return err
+}
+
+func (b *Backend) DeleteQueue(ctx context.Context, queueName string) error {
+	if b.WithoutTransaction {
+		return b.deleteQueueWithoutTransaction(ctx, queueName)
+	} else {
+		return b.deleteQueueWithTransaction(ctx, queueName)
+	}
 }
 
 func (b *Backend) ensureQueueExistsByName(rds redis.Cmdable, queueName string) (*taskqueue.TaskQueue, error) {
