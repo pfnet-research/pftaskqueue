@@ -90,6 +90,7 @@ var _ = Describe("Worker", func() {
 				Concurrency: 4,
 				TaskHandler: apiworker.TaskHandlerSpec{
 					DefaultCommandTimeout: 1 * time.Minute,
+					CleanupWorkspaceDir:   true,
 					Commands: []string{
 						"bash",
 						"-c",
@@ -189,6 +190,10 @@ var _ = Describe("Worker", func() {
 			suspend.State = taskqueue.TaskQueueStateSuspend
 			testutil.MustQueueWithState(bcknd, suspend)
 			Eventually(workerDone, 30*time.Second).Should(Receive(BeNil()))
+
+			fileList, err := ioutil.ReadDir(worker.WorkerWorkDir())
+			Expect(err).NotTo(HaveOccurred())
+			Expect(len(fileList)).To(BeZero())
 		})
 	})
 })
