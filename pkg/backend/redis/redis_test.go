@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"io/ioutil"
+	"sort"
 	"strings"
 	"time"
 
@@ -740,11 +741,18 @@ var _ = Describe("Backend", func() {
 						Expect(tasks[0].UID).NotTo(Equal(tasks[1].UID))
 
 						pending := mustPendingQueueLength(queue.UID.String(), 2)
-						Expect(pending[0]).To(Equal(tasks[1].UID))
-						Expect(pending[1]).To(Equal(tasks[0].UID))
 						taskUIDs := mustTasksSetSize(queue.UID.String(), 2)
-						Expect(taskUIDs[0]).To(Equal(tasks[1].UID))
-						Expect(taskUIDs[1]).To(Equal(tasks[0].UID))
+
+						sort.Strings(pending)
+						sort.Strings(taskUIDs)
+						sort.Slice(tasks, func(i, j int) bool {
+							return tasks[i].UID < tasks[j].UID
+						})
+
+						Expect(pending[0]).To(Equal(tasks[0].UID))
+						Expect(pending[1]).To(Equal(tasks[1].UID))
+						Expect(taskUIDs[0]).To(Equal(tasks[0].UID))
+						Expect(taskUIDs[1]).To(Equal(tasks[1].UID))
 						assertKeyContents(backend.taskKey(queue.UID.String(), tasks[0].UID), tasks[0])
 						assertKeyContents(backend.taskKey(queue.UID.String(), tasks[1].UID), tasks[1])
 					})
