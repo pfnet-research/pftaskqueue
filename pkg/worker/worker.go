@@ -290,6 +290,22 @@ func (w *Worker) runCommand(logger zerolog.Logger, t *task.Task) (task.TaskResul
 	}
 
 	workspacePath, envvars, err := w.prepareTaskHandlerDirAndEnvvars(t)
+	if w.config.TaskHandler.CleanupWorkspaceDir {
+		defer func() {
+			if workspacePath == "" {
+				workspacePath = w.workspacePath(t)
+			}
+			if _, err := os.Stat(workspacePath); errors.Is(err, os.ErrNotExist) {
+				logger.Info().Str("workspaceDir", workspacePath).Msg("Skip cleaning up because workspace dir does not exist")
+				return
+			}
+			if err := os.RemoveAll(workspacePath); err != nil {
+				logger.Error().Err(err).Str("workspaceDir", workspacePath).Msg("Failed to cleanup workspace dir")
+				return
+			}
+			logger.Info().Str("workspaceDir", workspacePath).Msg("Cleaned up workspace dir")
+		}()
+	}
 	if err != nil {
 		msg := "Can't prepare workspace dir for task handler process"
 		result := task.TaskResult{
@@ -395,11 +411,11 @@ func (w *Worker) runCommand(logger zerolog.Logger, t *task.Task) (task.TaskResul
 	return result, postHooks
 }
 
-func (w *Worker) thisWorkerWorkDir() string {
+func (w *Worker) WorkerWorkDir() string {
 	return filepath.Join(w.config.WorkDir, w.uid.String())
 }
 func (w *Worker) workspacePath(t *task.Task) string {
-	return filepath.Join(w.thisWorkerWorkDir(), t.Status.CurrentRecord.ProcessUID)
+	return filepath.Join(w.WorkerWorkDir(), t.Status.CurrentRecord.ProcessUID)
 }
 
 //	 {task workspace path}/

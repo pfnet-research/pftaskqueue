@@ -516,6 +516,8 @@ worker:
     # Default timeout of the task handler.
     # This value will be used when TaskSpec.timeoutSeconds is not set or 0.
     defaultTimeout: 30m0s
+    # Cleanup workspace dir or not when each task handler execution finished.
+    cleanupWorkspaceDir: false
     # Task Handler Command
     # A Worker spawns a process with the command for each received tasks
     commands:
@@ -633,6 +635,8 @@ pftaskqueue get-worker [queue] --state=[all,running,succeeded,failed,lost,tosalv
 ```
 ┌ {workspace direcoty}             # pftaskqueue passes the dir name to stdin of task handler process
 │                                  # also exported as PFTQ_TASK_HANDLER_WORKSPACE_DIR
+│                                  # Note: this directory will be deleted after task handler finished
+│                                  #       when taskHandler.CleanupWorkspaceDir is true in worker configuration
 │
 │   # pftaskqueue prepares whole the contents
 ├── input

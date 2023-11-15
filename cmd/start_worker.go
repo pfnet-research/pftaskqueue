@@ -96,6 +96,9 @@ func init() {
 	flag.Duration("default-command-timeout", cmdOpts.Worker.TaskHandler.DefaultCommandTimeout, "default timeout for executing command for tasks. the value will be used when the taskspec has no timeout spec")
 	viperBindPFlag("Worker.TaskHandler.DefaultTimeout", cmdOpts.Worker.TaskHandler.DefaultCommandTimeout.String(), flag.Lookup("default-command-timeout"))
 
+	flag.Bool("cleanup-workspace-dir", cmdOpts.Worker.TaskHandler.CleanupWorkspaceDir, "cleanup workspace dir or not when each command execution finished")
+	viperBindPFlag("Worker.TaskHandler.CleanupWorkspaceDir", strconv.FormatBool(cmdOpts.Worker.TaskHandler.CleanupWorkspaceDir), flag.Lookup("cleanup-workspace-dir"))
+
 	flag.Bool("exit-on-suspend", cmdOpts.Worker.ExitOnSuspend, "if set, worker exits when queue is suspended")
 	viperBindPFlag("Worker.ExitOnSuspend", strconv.FormatBool(cmdOpts.Worker.ExitOnSuspend), flag.Lookup("exit-on-suspend"))
 
