@@ -16,7 +16,7 @@ setup:
 	npm install --prefix=.dev markdown-toc && \
 	cd $(shell go env GOPATH) && \
 	go install golang.org/x/tools/cmd/goimports@latest && \
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.27.0 && \
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.55.2 && \
 	go install github.com/elastic/go-licenser@latest
 
 
